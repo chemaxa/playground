@@ -96,11 +96,19 @@ function go() {
   }
   
   
+<<<<<<< HEAD
   function trim(string) { //Удаляем лишние пробелы из строки
     return string.replace(/(^\s+)|(\s+$)/g, "");
   }
 
   function isValidUrl(url) { //Проверяем корректность URL-адреса с протоколом https, http или ftp
+=======
+  function trim(string) { // trim spaces
+    return string.replace(/(^\s+)|(\s+$)/g, "");
+  }
+
+  function isValidUrl(url) { //Check valid Url https, http èëè ftp
+>>>>>>> origin/master
     var template = /^(?:(?:https?|http|ftp):\/\/(?:[a-z0-9_-]{1,32}(?::[a-z0-9_-]{1,32})?@)?)?(?:(?:[a-z0-9-]{1,128}\.)+(?:com|net|org|mil|edu|arpa|ru|gov|biz|info|aero|inc|name|[a-z]{2})|(?!0)(?:(?!0[^.]|255)[0-9]{1,3}\.){3}(?!0|255)[0-9]{1,3})(?:\/[a-z0-9.,_@%&?+=\~\/-]*)?(?:#[^ \'\"&<>]*)?$/i;
     var regex = new RegExp(template);
     return (regex.test(url) ? true : false);
