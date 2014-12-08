@@ -1,4 +1,5 @@
 function go() {
+	'use strict';
   var broadcastsListRef = new Firebase('https://fiery-heat-9055.firebaseio.com/broadcasts');
   var streamsListRef = new Firebase('https://fiery-heat-9055.firebaseio.com/streams');
 
@@ -10,10 +11,10 @@ function go() {
   var inputBroadcastUrl = document.querySelector('.broadcastUrl');
   var divBroadcastsList = document.querySelector('.broadcastsList');
   
-  buttonSet.addEventListener('click', setBroadcast, false);
-  buttonGet.addEventListener('click', getBroadcast, false);
+  buttonSet.addEventListener('click', setNewBroadcast, false);
+  buttonGet.addEventListener('click', getBroadcastList, false);
 
-  function addBroadcastToListCallback(urlToBroadcast) {
+  function addBroadcastToListCallback(broadcastsList) {
     var ul = divBroadcastsList.getElementsByTagName('ul')[0];
     if(ul.childNodes.length > 1){
       divBroadcastsList.removeChild(ul);
@@ -22,19 +23,27 @@ function go() {
     }
     
     
-    for (var key in urlToBroadcast) {
+    for (var key in broadcastsList) {
       var li = document.createElement('li');
-      li.innerHTML = '<a onclick=\'func(' + urlToBroadcast[key] + ') \' href=javascript:void(0)' + key + '>' + urlToBroadcast[key].url;
-      ul.appendChild(li);
-      ///console.log(li);
+      var a = document.createElement('a');
+
+      (function(url){
+        a.addEventListener('click', function(){getCurrentBroadcast(url);}, false);  
+      })(key);
       
+      a.href='javascript:void(0)';
+      a.innerHTML=broadcastsList[key].url;
+      li.appendChild(a);
+      ul.appendChild(li);
     }
   }
   
+  
+
 
   function broadcastsList() {
     broadcastsListRef.once('value', function(nameSnapshot) {
-      console.log(nameSnapshot.val());
+      //console.log(nameSnapshot.val());
       addBroadcastToListCallback(nameSnapshot.val());
     });
   }
@@ -45,45 +54,45 @@ function go() {
     });
   }
 
-  function getBroadcast() {
-    streamsList();
-    broadcastsList();
+  function getCurrentBroadcast(broadcastId){
+    console.log(broadcastId);
+  }
+  function getBroadcastList() {
+  		streamsList();
+    	broadcastsList();	
   }
 
-  function setBroadcast() {
+  function setNewBroadcast() {
     ///// ONLY FOR DEBUG!!!!!!! THIS CLEAR ALL DATA IN broadcast LIST !
     //broadcastsListRef.remove();
     //streamsListRef.remove();
     //////////////////////////////////////
-    var newStreamRef = setNewStream();
-    var newSroadcastRef = setNewBroadcast();
+    // 
+    var newBroadcastRef = broadcastsListRef.push();
     
-    getBroadcast();
+    var newBroadcastData = {
+      url:srcVideo.value,
+      stream_id:0,
+    };
+    
+    writeDataToDB(newBroadcastRef,newBroadcastData);
+    //getBroadcast();
     inputBroadcastUrl.value=srcVideo.value;
   }
 
-  function setNewStream() {
-    var newStreamRef = streamsListRef.push();
-    newStreamRef.set({
-      'state': "state",
-      'pos': 0,
-      'lastTimeModificated': Firebase.ServerValue.TIMESTAMP
-    });
-    return newStreamRef;
+  
+
+  function setNewStreamRef (){
+    //var newStreamRef = streamsListRef.push();
+    console.log(111);//newStreamRef.toString());
+    //return newStreamRef;
   }
   
   function writeDataToDB  (ref,data) {
-    ref.set({
-      'stream_id': setNewStream().key(),
-      'url': srcVideo.value
-    });
+    ref.set(data);
   }
   
-  function setNewBroadcast() {
-    var newBroadcastRef = broadcastsListRef.push();
-    
-    return newBroadcastRef;
-  }
+  
   
   function updateStreamInfo (){
     
