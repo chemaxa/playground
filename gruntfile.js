@@ -32,7 +32,7 @@ module.exports = function(grunt) {
 
     //Загрузка модулей, которые предварительно установлены
     grunt.loadNpmTasks('grunt-contrib-watch');
-    //grunt.loadNpmTasks('grunt-contrib-jshint');
+    grunt.loadNpmTasks('grunt-contrib-jshint');
     //grunt.loadNpmTasks('grunt-contrib-concat');
 
     //Эти задания будут выполнятся сразу же когда вы в консоли напечатание grunt, и нажмете Enter

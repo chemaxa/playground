@@ -29,7 +29,7 @@ function go() {
             console.log(a);
             (function(url) {
                 a.addEventListener('click', function() {
-                    getCurrentBroadcast(url)
+                    getCurrentBroadcast(url);
                 }, false);
             })(key);
 
@@ -59,7 +59,7 @@ function go() {
     function getCurrentBroadcast(broadcastId) {
         var streamRef = setNewStreamRef();
 
-        console.log(1,broadcastId);
+        console.log(3,broadcastId);
     }
 
     function getBroadcastList() {
