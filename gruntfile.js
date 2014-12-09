@@ -7,11 +7,11 @@ module.exports = function(grunt) {
 
         //Например проверка кода javascript с помощью утилиты jshint
         jshint: {
-          files: ['*.js'],
-           options: {
-            loopfunc: true,
-            scripturl:true,
-          },
+            files: ['*.js'],
+            options: {
+                loopfunc: true,
+                scripturl: true,
+            },
         },
 
         //Склеивание файлов
@@ -22,11 +22,11 @@ module.exports = function(grunt) {
             scripts: {
                 files: ['*.js', '*.html', '*.css'],
                 tasks: ['jshint'],
+                options: {
+                    livereload: true,
+                },
             },
-            options: {
-                livereload: true,
-            },
-        }
+        },
 
     });
 
@@ -37,5 +37,5 @@ module.exports = function(grunt) {
 
     //Эти задания будут выполнятся сразу же когда вы в консоли напечатание grunt, и нажмете Enter
     //grunt.registerTask('default', ['jshint', 'concat']);
-    grunt.registerTask('default', ['jshint','watch']);
+    grunt.registerTask('default', ['jshint', 'watch']);
 };

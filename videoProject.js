@@ -26,10 +26,10 @@ function go() {
         for (var key in broadcastsList) {
             var li = document.createElement('li');
             var a = document.createElement('a');
-            console.log(a);
-            (function(url) {
+
+            (function(broadcastId) {
                 a.addEventListener('click', function() {
-                    getCurrentBroadcast(url);
+                    getCurrentBroadcast(broadcastId);
                 }, false);
             })(key);
 
@@ -59,7 +59,6 @@ function go() {
     function getCurrentBroadcast(broadcastId) {
         var streamRef = setNewStreamRef();
 
-        console.log(3,broadcastId);
     }
 
     function getBroadcastList() {
