@@ -11,7 +11,7 @@ function go() {
     var inputBroadcastUrl = document.querySelector('.broadcastUrl');
     var divBroadcastsList = document.querySelector('.broadcastsList');
 
-    var myStream;
+    var myStream, myStreamData;
 
     buttonSet.addEventListener('click', setNewBroadcast, false);
     buttonGet.addEventListener('click', getBroadcastList, false);
@@ -36,7 +36,8 @@ function go() {
             })(key);
 
             a.href = 'javascript:void(0)';
-            a.innerHTML = broadcastsList[key].url;
+            //a.innerHTML = broadcastsList[key].url;
+            a.innerHTML = key;
             li.appendChild(a);
             console.log(a);
             ul.appendChild(li);
@@ -53,17 +54,35 @@ function go() {
     function streamsList() {
         streamsListRef.once('value', function (nameSnapshot) {
             //streams = nameSnapshot.val();
+            debugData(nameSnapshot.val());
         });
     }
 
     function getCurrentBroadcast(broadcastId) {
-        var myStream = setNewStreamRef();
-        var newStreamData = {
-            state: 'paused',
-            position: 0,
-            lastTimeModificated: Firebase.ServerValue.TIMESTAMP,
-        };
-        writeDataToDB(myStream, newStreamData);
+        if (!myStream) {
+            myStream = setNewStreamRef();
+            myStreamData = {
+                'state': 'paused',
+                'position': 0,
+                'lastTimeModificated': Firebase.ServerValue.TIMESTAMP,
+                'broadcastId': broadcastId,
+            };
+            debugData(myStreamData);
+            writeDataToDB(myStream, myStreamData);
+        }
+        if (myStreamData.broadcastId != broadcastId) {
+
+            myStreamData = {
+                'state': 'paused',
+                'position': 0,
+                'lastTimeModificated': Firebase.ServerValue.TIMESTAMP,
+                'broadcastId': broadcastId,
+            };
+            debugData(myStreamData);
+            writeDataToDB(myStream, myStreamData);
+        }
+        console.dir(myStreamData.lastTimeModificated);
+
     }
 
     function getBroadcastList() {
@@ -122,6 +141,20 @@ function go() {
         var template = /^(?:(?:https?|http|ftp):\/\/(?:[a-z0-9_-]{1,32}(?::[a-z0-9_-]{1,32})?@)?)?(?:(?:[a-z0-9-]{1,128}\.)+(?:com|net|org|mil|edu|arpa|ru|gov|biz|info|aero|inc|name|[a-z]{2})|(?!0)(?:(?!0[^.]|255)[0-9]{1,3}\.){3}(?!0|255)[0-9]{1,3})(?:\/[a-z0-9.,_@%&?+=\~\/-]*)?(?:#[^ \'\"&<>]*)?$/i;
         var regex = new RegExp(template);
         return (regex.test(url) ? true : false);
+    }
+
+    function debugData(data) {
+        var li = document.createElement('li');
+        if (data instanceof Object) {
+            for (var key in data) {
+                li.innerHTML += '<br>' + key + ' ' + data[key];
+            }
+            console.log(data);
+        } else {
+            li.innerHTML = data;
+            console.log(1, data);
+        }
+        log.appendChild(li);
     }
 }
 
