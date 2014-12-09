@@ -11,6 +11,8 @@ function go() {
     var inputBroadcastUrl = document.querySelector('.broadcastUrl');
     var divBroadcastsList = document.querySelector('.broadcastsList');
 
+    var myStream;
+
     buttonSet.addEventListener('click', setNewBroadcast, false);
     buttonGet.addEventListener('click', getBroadcastList, false);
 
@@ -27,8 +29,8 @@ function go() {
             var li = document.createElement('li');
             var a = document.createElement('a');
 
-            (function(broadcastId) {
-                a.addEventListener('click', function() {
+            (function (broadcastId) {
+                a.addEventListener('click', function () {
                     getCurrentBroadcast(broadcastId);
                 }, false);
             })(key);
@@ -36,29 +38,32 @@ function go() {
             a.href = 'javascript:void(0)';
             a.innerHTML = broadcastsList[key].url;
             li.appendChild(a);
+            console.log(a);
             ul.appendChild(li);
         }
     }
 
-
-
-
     function broadcastsList() {
-        broadcastsListRef.once('value', function(nameSnapshot) {
+        broadcastsListRef.once('value', function (nameSnapshot) {
             //console.log(nameSnapshot.val());
             addBroadcastToListCallback(nameSnapshot.val());
         });
     }
 
     function streamsList() {
-        streamsListRef.once('value', function(nameSnapshot) {
+        streamsListRef.once('value', function (nameSnapshot) {
             //streams = nameSnapshot.val();
         });
     }
 
     function getCurrentBroadcast(broadcastId) {
-        var streamRef = setNewStreamRef();
-
+        var myStream = setNewStreamRef();
+        var newStreamData = {
+            state: 'paused',
+            position: 0,
+            lastTimeModificated: Firebase.ServerValue.TIMESTAMP,
+        };
+        writeDataToDB(myStream, newStreamData);
     }
 
     function getBroadcastList() {
@@ -88,7 +93,6 @@ function go() {
 
     function setNewStreamRef() {
         var newStreamRef = streamsListRef.push();
-        //console.log(111);//newStreamRef.toString());
         return newStreamRef;
     }
 
@@ -121,6 +125,7 @@ function go() {
     }
 }
 
-document.addEventListener("DOMContentLoaded", function(event) {
+document.addEventListener("DOMContentLoaded", function (event) {
+    'use strict';
     go();
 });
