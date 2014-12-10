@@ -39,24 +39,23 @@ function go() {
             //a.innerHTML = broadcastsList[key].url;
             a.innerHTML = key;
             li.appendChild(a);
-            console.log(a);
             ul.appendChild(li);
         }
     }
 
     function broadcastsList() {
-        broadcastsListRef.once('value', function (nameSnapshot) {
-            //console.log(nameSnapshot.val());
-            addBroadcastToListCallback(nameSnapshot.val());
+        broadcastsListRef.once('value', function (dataSnapshot) {
+            //console.log(dataSnapshot.val());
+            addBroadcastToListCallback(dataSnapshot.val());
         });
     }
 
-    function streamsList() {
-        streamsListRef.once('value', function (nameSnapshot) {
-            //streams = nameSnapshot.val();
-            debugData(nameSnapshot.val());
+    /*    function streamsList() {
+        streamsListRef.once('value', function (dataSnapshot) {
+            //streams = dataSnapshot.val();
+            //debugData(dataSnapshot.val());
         });
-    }
+    }*/
 
     function getCurrentBroadcast(broadcastId) {
         if (!myStream) {
@@ -67,7 +66,6 @@ function go() {
                 'lastTimeModificated': Firebase.ServerValue.TIMESTAMP,
                 'broadcastId': broadcastId,
             };
-            debugData(myStreamData);
             writeDataToDB(myStream, myStreamData);
         }
         if (myStreamData.broadcastId != broadcastId) {
@@ -78,15 +76,19 @@ function go() {
                 'lastTimeModificated': Firebase.ServerValue.TIMESTAMP,
                 'broadcastId': broadcastId,
             };
-            debugData(myStreamData);
             writeDataToDB(myStream, myStreamData);
+        } else {
+            var broadcastsRef = broadcastsListRef.child(broadcastId);
+            broadcastsRef.once('value', function (dataSnapshot) {
+                updateStreamData(dataSnapshot.val());
+            });
         }
-        console.dir(myStreamData.lastTimeModificated);
+
 
     }
 
     function getBroadcastList() {
-        streamsList();
+        //streamsList();
         broadcastsList();
     }
 
@@ -121,8 +123,8 @@ function go() {
 
 
 
-    function updateStreamInfo() {
-
+    function updateStreamData(streamData) {
+        console.log(streamData);
     }
 
     function setupPlayer(conf) {
