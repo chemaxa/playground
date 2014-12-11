@@ -81,14 +81,21 @@ function go() {
 
     function updateStreamData(streamData) {
 
-        console.log(streamData.key());
+        //console.log(streamData.key());
+        streamData.forEach(function (childSnapshot) {
+            // key will be "fred" the first time and "wilma" the second time
+            var key = childSnapshot.key();
 
-        streamsListRef.once('value', function (dataSnapshot) {
+            // childData will be the actual contents of the child
+            var childData = childSnapshot.val();
+            console.log(key, childData)
+        });
+        /*streamsListRef.once('value', function (dataSnapshot) {
             var streams = dataSnapshot.val();
             for (var key in streams) {
                 console.log(key, streams[key].broadcastId);
             }
-        });
+        });*/
     }
 
     function getBroadcastList() {
