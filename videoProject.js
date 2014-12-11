@@ -50,12 +50,6 @@ function go() {
         });
     }
 
-    /*    function streamsList() {
-        streamsListRef.once('value', function (dataSnapshot) {
-            //streams = dataSnapshot.val();
-            //debugData(dataSnapshot.val());
-        });
-    }*/
 
     function getCurrentBroadcast(broadcastId) {
         if (!myStream) {
@@ -80,15 +74,25 @@ function go() {
         } else {
             var broadcastsRef = broadcastsListRef.child(broadcastId);
             broadcastsRef.once('value', function (dataSnapshot) {
-                updateStreamData(dataSnapshot.val());
+                updateStreamData(dataSnapshot);
             });
         }
+    }
 
+    function updateStreamData(streamData) {
 
+        console.log(streamData.key());
+
+        streamsListRef.once('value', function (dataSnapshot) {
+            var streams = dataSnapshot.val();
+            for (var key in streams) {
+                console.log(key, streams[key].broadcastId);
+            }
+        });
     }
 
     function getBroadcastList() {
-        //streamsList();
+
         broadcastsList();
     }
 
@@ -123,9 +127,8 @@ function go() {
 
 
 
-    function updateStreamData(streamData) {
-        console.log(streamData);
-    }
+
+
 
     function setupPlayer(conf) {
         jwplayer('player').setup({
