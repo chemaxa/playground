@@ -81,6 +81,7 @@ function go() {
 
     function updateStreamData(streamData) {
 
+
         console.log(streamData.key());
 
         streamsListRef.once('value', function (dataSnapshot) {
