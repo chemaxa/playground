@@ -81,7 +81,6 @@ function go() {
 
     function updateStreamData(streamData) {
 
-<<<<<<< HEAD
         //console.log(streamData.key());
         streamData.forEach(function (childSnapshot) {
             // key will be "fred" the first time and "wilma" the second time
@@ -92,12 +91,10 @@ function go() {
             console.log(key, childData)
         });
         /*streamsListRef.once('value', function (dataSnapshot) {
-=======
-
         console.log(streamData.key());
 
         streamsListRef.once('value', function (dataSnapshot) {
->>>>>>> origin/master
+
             var streams = dataSnapshot.val();
             for (var key in streams) {
                 console.log(key, streams[key].broadcastId);
