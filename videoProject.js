@@ -52,6 +52,7 @@ function go() {
 
 
     function getCurrentBroadcast(broadcastId) {
+        // CREATE NEW BROADCAST & STREAM
         if (!myStream) {
             myStream = setNewStreamRef();
             myStreamData = {
@@ -61,7 +62,9 @@ function go() {
                 'broadcastId': broadcastId,
             };
             writeDataToDB(myStream, myStreamData);
+            console.log('CREATE NEW STREAM',myStream.key(), myStreamData);
         }
+        // CHANGE CURRENT BROADCAST
         if (myStreamData.broadcastId != broadcastId) {
 
             myStreamData = {
@@ -70,40 +73,26 @@ function go() {
                 'lastTimeModificated': Firebase.ServerValue.TIMESTAMP,
                 'broadcastId': broadcastId,
             };
+
             writeDataToDB(myStream, myStreamData);
+            console.log('CHANGE',myStream.key(), myStreamData);
         } else {
+            // READ CURRENT BROADCAST STATE
             var broadcastsRef = broadcastsListRef.child(broadcastId);
             broadcastsRef.once('value', function (dataSnapshot) {
                 updateStreamData(dataSnapshot);
             });
+            console.log('3');
         }
     }
 
     function updateStreamData(streamData) {
 
-        //console.log(streamData.key());
-        streamData.forEach(function (childSnapshot) {
-            // key will be "fred" the first time and "wilma" the second time
-            var key = childSnapshot.key();
-
-            // childData will be the actual contents of the child
-            var childData = childSnapshot.val();
-            console.log(key, childData)
-        });
-        /*streamsListRef.once('value', function (dataSnapshot) {
         console.log(streamData.key());
 
-        streamsListRef.once('value', function (dataSnapshot) {
-
-            var streams = dataSnapshot.val();
-            for (var key in streams) {
-                console.log(key, streams[key].broadcastId);
-            }
-        });*/
     }
 
     function getBroadcastList() {
-
         broadcastsList();
     }
 
@@ -136,9 +125,9 @@ function go() {
         ref.set(data);
     }
 
-
-
-
+    function deleteDataFromDB(ref){
+        ref.remove();
+    }
 
 
     function setupPlayer(conf) {
@@ -153,7 +142,7 @@ function go() {
         return string.replace(/(^\s+)|(\s+$)/g, "");
     }
 
-    function isValidUrl(url) { //Check valid Url https, http èëè ftp
+    function isValidUrl(url) { //Check valid Url https, http or ftp
         var template = /^(?:(?:https?|http|ftp):\/\/(?:[a-z0-9_-]{1,32}(?::[a-z0-9_-]{1,32})?@)?)?(?:(?:[a-z0-9-]{1,128}\.)+(?:com|net|org|mil|edu|arpa|ru|gov|biz|info|aero|inc|name|[a-z]{2})|(?!0)(?:(?!0[^.]|255)[0-9]{1,3}\.){3}(?!0|255)[0-9]{1,3})(?:\/[a-z0-9.,_@%&?+=\~\/-]*)?(?:#[^ \'\"&<>]*)?$/i;
         var regex = new RegExp(template);
         return (regex.test(url) ? true : false);
