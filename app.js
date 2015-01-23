@@ -62,34 +62,33 @@ function go() {
                 'broadcastId': broadcastId,
             };
             writeDataToDB(myStream, myStreamData);
-            console.log('CREATE NEW STREAM',myStream.key(), myStreamData);
+            console.log('CREATE NEW STREAM', myStream.key(), myStreamData);
         }
         // CHANGE CURRENT BROADCAST
         if (myStreamData.broadcastId != broadcastId) {
-
             myStreamData = {
                 'state': 'paused',
                 'position': 0,
                 'lastTimeModificated': Firebase.ServerValue.TIMESTAMP,
                 'broadcastId': broadcastId,
             };
-
             writeDataToDB(myStream, myStreamData);
-            console.log('CHANGE',myStream.key(), myStreamData);
-        } else {
-            // READ CURRENT BROADCAST STATE
-            var broadcastsRef = broadcastsListRef.child(broadcastId);
-            broadcastsRef.once('value', function (dataSnapshot) {
-                updateStreamData(dataSnapshot);
+            // GET CONF FROM LAST ALIVE STREAM FOR CURRENT BROADCAST
+            streamsListRef.orderByChild('lastTimeModificated').on("child_added", function (snapshot) {
+                if (myStream.key() != snapshot.key() && myStreamData.broadcastId == snapshot.val().broadcastId)
+                    updateStreamData(snapshot);
             });
-            console.log('3');
+
+
+
         }
     }
 
+
     function updateStreamData(streamData) {
-
-        console.log(streamData.key());
-
+        myStreamData.state = streamData.val().state;
+        myStreamData.position = streamData.val().position;
+        //console.log(myStream.key(),streamData.key(),streamData.val(),myStreamData);
     }
 
     function getBroadcastList() {
@@ -101,12 +100,12 @@ function go() {
         //broadcastsListRef.remove();
         //streamsListRef.remove();
         //////////////////////////////////////
-        // 
+        //
         var newBroadcastRef = broadcastsListRef.push();
 
         var newBroadcastData = {
             url: srcVideo.value,
-            stream_id: 0,
+            streamId: 0,
         };
 
         writeDataToDB(newBroadcastRef, newBroadcastData);
@@ -125,7 +124,7 @@ function go() {
         ref.set(data);
     }
 
-    function deleteDataFromDB(ref){
+    function deleteDataFromDB(ref) {
         ref.remove();
     }
 
@@ -138,6 +137,8 @@ function go() {
 
 
 
+    //*************  SERVICE FUNCTIONS !!!!! **********************//
+
     function trim(string) { // trim spaces
         return string.replace(/(^\s+)|(\s+$)/g, "");
     }
@@ -147,6 +148,13 @@ function go() {
         var regex = new RegExp(template);
         return (regex.test(url) ? true : false);
     }
+
+    function compareStreams(streamA, streamB) {
+
+        return streamA.lastTimeModificated - streamB.lastTimeModificated;
+
+    }
+
 
     function debugData(data) {
         var li = document.createElement('li');
