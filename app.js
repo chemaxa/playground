@@ -45,7 +45,6 @@ function go() {
 
     function broadcastsList() {
         broadcastsListRef.once('value', function (dataSnapshot) {
-            //console.log(dataSnapshot.val());
             addBroadcastToListCallback(dataSnapshot.val());
         });
     }
@@ -74,13 +73,10 @@ function go() {
             };
             writeDataToDB(myStream, myStreamData);
             // GET CONF FROM LAST ALIVE STREAM FOR CURRENT BROADCAST
-            streamsListRef.orderByChild('lastTimeModificated').on("child_added", function (snapshot) {
-                if (myStream.key() != snapshot.key() && myStreamData.broadcastId == snapshot.val().broadcastId)
-                    updateStreamData(snapshot);
+            streamsListRef.orderByChild("lastTimeModificated").on("child_added", function (dataSnapshot) {
+                if (myStream.key() != dataSnapshot.key() && myStreamData.broadcastId == dataSnapshot.val().broadcastId)
+                    updateStreamData(dataSnapshot);
             });
-
-
-
         }
     }
 
@@ -100,7 +96,7 @@ function go() {
         //broadcastsListRef.remove();
         //streamsListRef.remove();
         //////////////////////////////////////
-        //
+
         var newBroadcastRef = broadcastsListRef.push();
 
         var newBroadcastData = {
@@ -116,8 +112,7 @@ function go() {
 
 
     function setNewStreamRef() {
-        var newStreamRef = streamsListRef.push();
-        return newStreamRef;
+        return streamsListRef.push();
     }
 
     function writeDataToDB(ref, data) {
@@ -139,36 +134,38 @@ function go() {
 
     //*************  SERVICE FUNCTIONS !!!!! **********************//
 
-    function trim(string) { // trim spaces
+    // trim spaces
+    function trim(string) {
         return string.replace(/(^\s+)|(\s+$)/g, "");
     }
 
-    function isValidUrl(url) { //Check valid Url https, http or ftp
+    //Check valid Url https, http or ftp
+    function isValidUrl(url) {
         var template = /^(?:(?:https?|http|ftp):\/\/(?:[a-z0-9_-]{1,32}(?::[a-z0-9_-]{1,32})?@)?)?(?:(?:[a-z0-9-]{1,128}\.)+(?:com|net|org|mil|edu|arpa|ru|gov|biz|info|aero|inc|name|[a-z]{2})|(?!0)(?:(?!0[^.]|255)[0-9]{1,3}\.){3}(?!0|255)[0-9]{1,3})(?:\/[a-z0-9.,_@%&?+=\~\/-]*)?(?:#[^ \'\"&<>]*)?$/i;
         var regex = new RegExp(template);
         return (regex.test(url) ? true : false);
     }
 
-    function compareStreams(streamA, streamB) {
+    /*   function compareStreams(streamA, streamB) {
 
-        return streamA.lastTimeModificated - streamB.lastTimeModificated;
+           return streamA.lastTimeModificated - streamB.lastTimeModificated;
 
-    }
+       }*/
 
 
-    function debugData(data) {
-        var li = document.createElement('li');
-        if (data instanceof Object) {
-            for (var key in data) {
-                li.innerHTML += '<br>' + key + ' ' + data[key];
-            }
-            console.log(data);
-        } else {
-            li.innerHTML = data;
-            console.log(1, data);
-        }
-        log.appendChild(li);
-    }
+    /* function debugData(data) {
+         var li = document.createElement('li');
+         if (data instanceof Object) {
+             for (var key in data) {
+                 li.innerHTML += '<br>' + key + ' ' + data[key];
+             }
+             console.log(data);
+         } else {
+             li.innerHTML = data;
+             console.log(1, data);
+         }
+         log.appendChild(li);
+     }*/
 }
 
 document.addEventListener("DOMContentLoaded", function (event) {
