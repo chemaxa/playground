@@ -3,18 +3,19 @@ function go() {
     var broadcastsListRef = new Firebase('https://fiery-heat-9055.firebaseio.com/broadcasts');
     var streamsListRef = new Firebase('https://fiery-heat-9055.firebaseio.com/streams');
 
-    var buttonSet = document.getElementsByName('urlButtonSet')[0];
-    var buttonGet = document.getElementsByName('urlButtonGet')[0];
-    var srcVideo = document.getElementsByName('urlVideo')[0];
+    var setBroadcastForm = document.querySelector('setBroadcastForm');
+    var btnGetBroadcats = document.getElementsByName('btnGetBroadcasts')[0];
+
     var divPlayer = document.querySelector('.player');
-    var divButton = document.querySelector('.urlField');
+    //var divButton = document.querySelector('.urlField');
     var inputBroadcastUrl = document.querySelector('.broadcastUrl');
     var divBroadcastsList = document.querySelector('.broadcastsList');
 
     var myStream, myStreamData;
 
-    buttonSet.addEventListener('click', setNewBroadcast, false);
-    buttonGet.addEventListener('click', getBroadcastList, false);
+
+    setBroadcastForm.addEventListener('submit', setNewBroadcast, false);
+    btnGetBroadcats.addEventListener('click', getBroadcastList, false);
 
     function addBroadcastToListCallback(broadcastsList) {
         var ul = divBroadcastsList.getElementsByTagName('ul')[0];
@@ -97,16 +98,23 @@ function go() {
         //streamsListRef.remove();
         //////////////////////////////////////
 
-        var newBroadcastRef = broadcastsListRef.push();
+        event.preventDefault();
 
-        var newBroadcastData = {
-            url: srcVideo.value,
-            streamId: 0,
-        };
+        if (event.target[0].value != '') {
+            var newBroadcastRef = broadcastsListRef.push();
 
-        writeDataToDB(newBroadcastRef, newBroadcastData);
-        //getBroadcast();
-        inputBroadcastUrl.value = srcVideo.value;
+            var newBroadcastData = {
+                url: event.target[0].value,
+                streamId: 0,
+            };
+
+            writeDataToDB(newBroadcastRef, newBroadcastData);
+            //getBroadcast();
+            inputBroadcastUrl.value = event.target[0].value;
+        }
+
+
+
     }
 
 
@@ -135,16 +143,16 @@ function go() {
     //*************  SERVICE FUNCTIONS !!!!! **********************//
 
     // trim spaces
-    function trim(string) {
+    /*function trim(string) {
         return string.replace(/(^\s+)|(\s+$)/g, "");
-    }
+    }*/
 
     //Check valid Url https, http or ftp
-    function isValidUrl(url) {
+    /*function isValidUrl(url) {
         var template = /^(?:(?:https?|http|ftp):\/\/(?:[a-z0-9_-]{1,32}(?::[a-z0-9_-]{1,32})?@)?)?(?:(?:[a-z0-9-]{1,128}\.)+(?:com|net|org|mil|edu|arpa|ru|gov|biz|info|aero|inc|name|[a-z]{2})|(?!0)(?:(?!0[^.]|255)[0-9]{1,3}\.){3}(?!0|255)[0-9]{1,3})(?:\/[a-z0-9.,_@%&?+=\~\/-]*)?(?:#[^ \'\"&<>]*)?$/i;
         var regex = new RegExp(template);
         return (regex.test(url) ? true : false);
-    }
+    }*/
 
     /*   function compareStreams(streamA, streamB) {
 
@@ -168,7 +176,7 @@ function go() {
      }*/
 }
 
-document.addEventListener("DOMContentLoaded", function (event) {
+document.addEventListener("DOMContentLoaded", function () {
     'use strict';
     go();
 });

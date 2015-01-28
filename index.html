@@ -16,27 +16,27 @@
 <body>
 
 
-    <div class="urlField">Put URL to Your Video:
+    <form class="setBroadcastForm">
+        Put URL to Your Video:
         <br>
-        <input type='url' name='urlVideo' placeholder="Введите URL видео">
-        <input type='button' name='urlButtonSet' value='Set Broadcast'>
-    </div>
+        <input type='url' placeholder='Введите URL видео' pattern="http?://.+" />
+        <input type='submit' value='Set Broadcast' />
 
-    <input class='broadcastUrl' onfocus="this.select()" value='http://www.youtube.com/watch?v=yvRn76Fqyzc'>
+    </form>
 
-    <div class="player">My WOW PLAYER !!! DIV</div>
+    <input class='broadcastUrl' onfocus="this.select() " value='http://www.youtube.com/watch?v=yvRn76Fqyzc'>
+
+    <div class="player ">My WOW PLAYER !!! DIV</div>
 
 
-    <div></div>
+
     <div class='broadcastsList'>
-        <input type='button' name='urlButtonGet' value='Get Broadcasts'>
+        <input type='button' name='btnGetBroadcasts' value='Get Broadcasts'>
         <ul>
 
         </ul>
     </div>
-    <div class="log">
-        <ul id="log"></ul>
-    </div>
+
 
 </body>
 
