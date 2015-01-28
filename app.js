@@ -3,7 +3,7 @@ function go() {
     var broadcastsListRef = new Firebase('https://fiery-heat-9055.firebaseio.com/broadcasts');
     var streamsListRef = new Firebase('https://fiery-heat-9055.firebaseio.com/streams');
 
-    var setBroadcastForm = document.querySelector('setBroadcastForm');
+    var setBroadcastForm = document.querySelector('.setBroadcastForm');
     var btnGetBroadcats = document.getElementsByName('btnGetBroadcasts')[0];
 
     var divPlayer = document.querySelector('.player');
@@ -16,6 +16,48 @@ function go() {
 
     setBroadcastForm.addEventListener('submit', setNewBroadcast, false);
     btnGetBroadcats.addEventListener('click', getBroadcastList, false);
+
+
+
+    ////////////// WORK WITH PLAYER //////////////////
+
+    var timerId = setInterval(setConfigByInterval, 5000);
+
+
+
+
+    function setConfigByInterval() {
+
+    }
+
+    function setPlayerConfig(conf) {
+        jwplayer('player').setup({
+            file: conf.file
+        });
+    }
+
+    function getPlayerConfig() {
+
+    }
+
+    jwplayer('player').onPause(function (event) {
+        console.log(1, event.newstate);
+        myStreamData.state = event.newstate;
+        writeDataToDB(myStream, myStreamData);
+        console.log('state on Pause', myStream.key(), myStreamData);
+    });
+
+    jwplayer('player').onPlay(function (event) {
+        console.log(2, event.newstate, this.getPosition());
+        myStreamData.state = event.newstate;
+        myStreamData.position = this.getPosition();
+        writeDataToDB(myStream, myStreamData);
+        console.log('state on Play', myStream.key(), myStreamData);
+    });
+
+
+
+    /////////// WORK WITH HTML ////////////////////
 
     function addBroadcastToListCallback(broadcastsList) {
         var ul = divBroadcastsList.getElementsByTagName('ul')[0];
@@ -38,7 +80,7 @@ function go() {
 
             a.href = 'javascript:void(0)';
             //a.innerHTML = broadcastsList[key].url;
-            a.innerHTML = key;
+            a.innerHTML = key + '<br>' + broadcastsList[key].url;
             li.appendChild(a);
             ul.appendChild(li);
         }
@@ -112,12 +154,7 @@ function go() {
             //getBroadcast();
             inputBroadcastUrl.value = event.target[0].value;
         }
-
-
-
     }
-
-
 
     function setNewStreamRef() {
         return streamsListRef.push();
@@ -129,13 +166,6 @@ function go() {
 
     function deleteDataFromDB(ref) {
         ref.remove();
-    }
-
-
-    function setupPlayer(conf) {
-        jwplayer('player').setup({
-            file: conf.file
-        });
     }
 
 
