@@ -6,7 +6,7 @@ function go() {
     var setBroadcastForm = document.querySelector('.setBroadcastForm');
     var btnGetBroadcats = document.getElementsByName('btnGetBroadcasts')[0];
 
-    var divPlayer = document.getElementById('player');
+    //var player = document.getElementById('player');
 
     var inputBroadcastUrl = document.querySelector('.broadcastUrl');
     var divBroadcastsList = document.querySelector('.broadcastsList');
@@ -15,38 +15,35 @@ function go() {
         myStreamData,
         playerConfig;
 
+    playerConfig = {
+        "techOrder": ["youtube"],
+        "src": "www.youtube.com/watch?v=yvRn76Fqyzc"
+    };
+
+    var player = videojs('player', playerConfig);
+
+
 
     setBroadcastForm.addEventListener('submit', setNewBroadcast, false);
     btnGetBroadcats.addEventListener('click', getBroadcastList, false);
 
-    playerConfig = {
-        "techOrder": ["youtube"],
-        "src": "http://www.youtube.com/watch?v=xjS6SftYQaQ"
-    };
+
 
 
     ////////////// WORK WITH PLAYER //////////////////
 
-    var timerId = setInterval(setConfigByInterval, 5000);
 
-
-    function setConfigByInterval() {
-
-    }
 
     function setPlayerConfig(conf) {
-        divPlayer.dataset.setup = JSON.stringify(playerConfig);
+
+        console.log(2, conf);
+        if (conf.state == 'paused')
+            player.pause();
+
+        if (player.currentTime() != conf.position)
+            player.currentTime(conf.position);
+
     }
-
-    function getPlayerConfig() {
-
-    }
-
-
-
-
-
-
 
 
 
@@ -108,6 +105,7 @@ function go() {
                 'broadcastId': broadcastId,
             };
             writeDataToDB(myStream, myStreamData);
+
             // GET CONF FROM LAST ALIVE STREAM FOR CURRENT BROADCAST
             streamsListRef.orderByChild("lastTimeModificated").on("child_added", function (dataSnapshot) {
                 if (myStream.key() != dataSnapshot.key() && myStreamData.broadcastId == dataSnapshot.val().broadcastId)
@@ -120,7 +118,8 @@ function go() {
     function updateStreamData(streamData) {
         myStreamData.state = streamData.val().state;
         myStreamData.position = streamData.val().position;
-        //console.log(myStream.key(),streamData.key(),streamData.val(),myStreamData);
+        console.log(1, myStream.key(), streamData.key(), streamData.val(), myStreamData);
+        setPlayerConfig(myStreamData);
     }
 
     function getBroadcastList() {
@@ -137,10 +136,11 @@ function go() {
 
         if (event.target[0].value != '') {
             var newBroadcastRef = broadcastsListRef.push();
-
+            var u = new URL(event.target[0].value);
             var newBroadcastData = {
-                url: event.target[0].value,
+                src: event.target[0].value,
                 streamId: 0,
+                techOrder: [u.host]
             };
 
             writeDataToDB(newBroadcastRef, newBroadcastData);
