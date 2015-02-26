@@ -7,12 +7,13 @@
     <!-- FIreBase-->
     <script src="https://cdn.firebase.com/js/client/2.0.5/firebase.js"></script>
 
-    <!-- JWPlayer-->
-    <script src="http://jwpsrv.com/library/qQOzYHTQEeSt6woORWfmyA.js"></script>
-    <!-- GRUNT LIVERELOAD-->
-    <script src="//localhost:1337/livereload.js"></script>
+    <!-- Video JS -->
+    <link href="http://vjs.zencdn.net/4.12/video-js.css" rel="stylesheet">
+    <script src="http://vjs.zencdn.net/4.12/video.js"></script>
+
     <!-- APPLICATION -->
-    <script src='app.js'></script>
+    <script src="youtube.js"></script>
+    <script src="app.js"></script>
 </head>
 
 <body>
@@ -28,8 +29,12 @@
 
     <input class='broadcastUrl' onfocus="this.select() " value='http://www.youtube.com/watch?v=yvRn76Fqyzc'>
 
-    <div id="player">My WOW PLAYER !!! DIV</div>
 
+    <video id="player" class="video-js vjs-default-skin" controls preload="auto" width="480" height="270" data-setup='{}'>
+        <p class="vjs-no-js">
+            To view this video please enable JavaScript, and consider upgrading to a web browser that <a href="http://videojs.com/html5-video-support/" target="_blank">supports HTML5 video</a>
+        </p>
+    </video>
 
 
     <div class='broadcastsList'>
