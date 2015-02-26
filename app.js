@@ -6,8 +6,8 @@ function go() {
     var setBroadcastForm = document.querySelector('.setBroadcastForm');
     var btnGetBroadcats = document.getElementsByName('btnGetBroadcasts')[0];
 
-    var divPlayer = document.querySelector('.player');
-    //var divButton = document.querySelector('.urlField');
+    var divPlayer = document.getElementById('player');
+
     var inputBroadcastUrl = document.querySelector('.broadcastUrl');
     var divBroadcastsList = document.querySelector('.broadcastsList');
 
@@ -24,8 +24,6 @@ function go() {
     var timerId = setInterval(setConfigByInterval, 5000);
 
 
-
-
     function setConfigByInterval() {
 
     }
@@ -40,14 +38,23 @@ function go() {
 
     }
 
-    jwplayer('player').onPause(function (event) {
+
+
+    jwplayer(divPlayer).setup({
+        primary: "html5",
+        file: 'http://www.youtube.com/watch?v=SfhV0Sew0j4',
+        title: 'Ленинград — СИЗОнная'
+    });
+
+
+    jwplayer(divPlayer).onPause(function (event) {
         console.log(1, event.newstate);
         myStreamData.state = event.newstate;
         writeDataToDB(myStream, myStreamData);
         console.log('state on Pause', myStream.key(), myStreamData);
     });
 
-    jwplayer('player').onPlay(function (event) {
+    jwplayer(divPlayer).onPlay(function (event) {
         console.log(2, event.newstate, this.getPosition());
         myStreamData.state = event.newstate;
         myStreamData.position = this.getPosition();
