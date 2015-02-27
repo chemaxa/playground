@@ -62,7 +62,7 @@ function go() {
             if (myStream != undefined) {
                 broadcastsListRef.orderByKey().equalTo(myStreamData.broadcastId).on("child_added", function (snapshot) {
                     console.log(snapshot.key(), myStream.key());
-                    writeDataToDB(snapshot.ref(), );
+                    //writeDataToDB(snapshot.ref(), );
                 });
             }
         }
