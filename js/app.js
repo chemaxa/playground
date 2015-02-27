@@ -12,8 +12,8 @@ function go() {
     var divBroadcastsList = document.querySelector('.broadcastsList');
 
     var myStream,
-        myStreamData,
-        playerConfig;
+        myStreamData = {},
+        playerConfig = {};
 
     playerConfig = {
         "techOrder": ["youtube"],
@@ -37,14 +37,50 @@ function go() {
     function setPlayerConfig(conf) {
 
         console.log(2, conf);
-        if (conf.state == 'paused')
+
+        broadcastsListRef.orderByKey().equalTo(conf.broadcastId).on("child_added", function (snapshot) {
+            console.log(snapshot.val().src);
+            player.src(snapshot.val().src);
+        });
+
+        if (conf.state == 'pause')
             player.pause();
 
         if (player.currentTime() != conf.position)
-            player.currentTime(conf.position);
+            player.currentTime(Math.round(conf.position));
+
+    };
+
+
+
+    function logPlayerState() {
+        myStreamData.state = 'play';
+        myStreamData.position = player.currentTime();
+
+        if (player.paused()) {
+            myStreamData.state = 'pause';
+            if (myStream != undefined) {
+                broadcastsListRef.orderByKey().equalTo(myStreamData.broadcastId).on("child_added", function (snapshot) {
+                    console.log(snapshot.key(), myStream.key());
+                    writeDataToDB(snapshot.ref(), );
+                });
+            }
+        }
+
+
+        if (myStream != undefined) {
+
+            writeDataToDB(myStream, myStreamData);
+        }
+    }
+
+    function setPlayerState() {
 
     }
 
+    setInterval(logPlayerState, 1000);
+
+    setInterval(setPlayerState, 1000);
 
 
     /////////// WORK WITH HTML ////////////////////
@@ -70,7 +106,7 @@ function go() {
 
             a.href = 'javascript:void(0)';
             //a.innerHTML = broadcastsList[key].url;
-            a.innerHTML = key + '<br>' + broadcastsList[key].url;
+            a.innerHTML = key + '<br>' + broadcastsList[key].src;
             li.appendChild(a);
             ul.appendChild(li);
         }
@@ -88,7 +124,7 @@ function go() {
         if (!myStream) {
             myStream = setNewStreamRef();
             myStreamData = {
-                'state': 'paused',
+                'state': 'pause',
                 'position': 0,
                 'lastTimeModificated': Firebase.ServerValue.TIMESTAMP,
                 'broadcastId': broadcastId,
@@ -96,22 +132,27 @@ function go() {
             writeDataToDB(myStream, myStreamData);
             console.log('CREATE NEW STREAM', myStream.key(), myStreamData);
         }
+
         // CHANGE CURRENT BROADCAST
         if (myStreamData.broadcastId != broadcastId) {
             myStreamData = {
-                'state': 'paused',
+                'state': 'pause',
                 'position': 0,
                 'lastTimeModificated': Firebase.ServerValue.TIMESTAMP,
                 'broadcastId': broadcastId,
             };
             writeDataToDB(myStream, myStreamData);
 
-            // GET CONF FROM LAST ALIVE STREAM FOR CURRENT BROADCAST
-            streamsListRef.orderByChild("lastTimeModificated").on("child_added", function (dataSnapshot) {
-                if (myStream.key() != dataSnapshot.key() && myStreamData.broadcastId == dataSnapshot.val().broadcastId)
-                    updateStreamData(dataSnapshot);
-            });
+            updateStreamDataFromLastAliveStream();
         }
+    }
+
+    function updateStreamDataFromLastAliveStream() {
+        // GET CONF FROM LAST ALIVE STREAM FOR CURRENT BROADCAST
+        streamsListRef.orderByChild("lastTimeModificated").on("child_added", function (dataSnapshot) {
+            if (myStream.key() != dataSnapshot.key() && myStreamData.broadcastId == dataSnapshot.val().broadcastId)
+                updateStreamData(dataSnapshot);
+        });
     }
 
 
@@ -119,6 +160,7 @@ function go() {
         myStreamData.state = streamData.val().state;
         myStreamData.position = streamData.val().position;
         console.log(1, myStream.key(), streamData.key(), streamData.val(), myStreamData);
+        // copy state from stream
         setPlayerConfig(myStreamData);
     }
 
@@ -140,7 +182,7 @@ function go() {
             var newBroadcastData = {
                 src: event.target[0].value,
                 streamId: 0,
-                techOrder: [u.host]
+                techOrder: u.host
             };
 
             writeDataToDB(newBroadcastRef, newBroadcastData);
