@@ -225,3 +225,8 @@ node_modules
 ## SUBLIME
 ###############
 *.sublime-*
+
+##########
+## Prepros
+##########
+prepros.cfg
