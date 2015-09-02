@@ -32,23 +32,42 @@
 </head>
 
 <body>
-    <h1>My Video Project</h1>
-    <form class="setBroadcastForm">
-        Put URL to Your Video:
-        <br>
-        <input type='url' placeholder='Введите URL видео' pattern="http?://.+" />
-        <input type='submit' value='Set Broadcast' />
-    </form>
-    <input class='broadcastUrl' onfocus="this.select() " value='http://www.youtube.com/watch?v=yvRn76Fqyzc'>
-    <video id="player" class="video-js vjs-default-skin" controls preload="auto" width="480" height="270" data-setup='{}'>
-        <p class="vjs-no-js">
-            To view this video please enable JavaScript, and consider upgrading to a web browser that <a href="http://videojs.com/html5-video-support/" target="_blank">supports HTML5 video</a>
-        </p>
-    </video>
-    <div class='broadcastsList'>
-        <input type='button' name='btnGetBroadcasts' value='Get Broadcasts'>
-        <ul>
-        </ul>
+    <div class="container">
+        <div class="row">
+            <div class="col-md-12 col-lg-12">
+                <h1>JVideo</h1>
+                <div class="form-group">
+                    <label for="inputPutUrl" class="col-sm-2 control-label">Put URL</label>
+                    <div class="input-group">
+                        <input type="url" class="form-control" id="inputPutUrl" placeholder="Put URL to Video" pattern="http?://.+">
+                        <span class="input-group-btn">
+                           <button class="btn btn-default" type="button" id="setBroadcast">Go!</button>
+                        </span>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="inputGetUrl" class="col-sm-2 control-label">Get URL</label>
+                    <div class="input-group col-sm-10">
+                        <input type="url" class="form-control" id="inputGetUrl" placeholder="Get URL" value='http://www.youtube.com/watch?v=yvRn76Fqyzc'>
+                    </div>
+                </div>
+                <div class="col-md-8">
+                    <video id="player" class="video-js vjs-default-skin" controls preload="auto" width="480" height="270" data-setup='{}'>
+                        <p class="vjs-no-js">
+                            To view this video please enable JavaScript, and consider upgrading to a web browser that
+                            <a href="http://videojs.com/html5-video-support/" target="_blank">supports HTML5 video</a>
+                        </p>
+                    </video>
+                </div>
+                <div class="col-md-4">
+                    <div class='broadcastsList'>
+                        <button id='getBroadcasts' class="btn btn-primary">Get Broadcasts</button>
+                        <ul id="broadcasts">
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 </body>
 
