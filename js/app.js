@@ -3,14 +3,15 @@ $(function() {
     // Firebase Refs
     var broadcastsListRef = new Firebase('https://fiery-heat-9055.firebaseio.com/broadcasts'),
         streamsListRef = new Firebase('https://fiery-heat-9055.firebaseio.com/streams'),
-        // Html Elements
-        broadcasts = document.getElementById('broadcasts'),
-        inputPutUrl = document.getElementById('inputPutUrl'),
+
         // Stream reference
         myStreamRef,
         // Stream state object
         myStreamData = {},
 
+        // Html Elements
+        broadcasts = document.getElementById('broadcasts'),
+        inputPutUrl = document.getElementById('inputPutUrl'),
         // VideoJS player init config
         playerConfig = {
             "techOrder": ["youtube"],
@@ -32,7 +33,7 @@ $(function() {
     // Add events
     setBroadcast.addEventListener('click', brdCntr.set, false);
     getBroadcasts.addEventListener('click', brdCntr.list, false);
-    //setInterval(plrCntr.log, 1000);
+    setInterval(plrCntr.log, 1000);
     //setInterval(PlCntr.set, 1000);
     player.on('play', function() {
         plrCntr.log();
@@ -68,6 +69,7 @@ $(function() {
             }
 
             myStreamData.position = player.currentTime();
+            myStreamData.lastAlive = Firebase.ServerValue.TIMESTAMP;
 
             if (myStreamRef != undefined) {
                 myStreamRef.set(myStreamData);
@@ -78,6 +80,17 @@ $(function() {
 
     //Stream Controller 
     function StrCntr() {
+        this.setMyStream = function() {
+
+        }
+        this.getDonorStream = function(broadcastId) {
+            var ref = new Firebase(broadcastsListRef.toString() + "/" + broadcastId);
+            ref.orderByChild('lastAlive').limitToLast(2).on("child_added", function(snapshot) {
+                console.log('LA ', snapshot.val());
+                console.log('Parent ', snapshot.key());
+                myStreamData = snapshot.val();
+            });
+        }
         this.updData = function(streamData) {
             myStreamData.state = streamData.val().state;
             myStreamData.position = streamData.val().position;
@@ -109,7 +122,7 @@ $(function() {
 
                     (function(broadcastId) {
                         a.addEventListener('click', function() {
-                            self.getCurrent(broadcastId);
+                            self.setCurrent(broadcastId);
                         }, false);
                     })(key);
 
@@ -123,34 +136,44 @@ $(function() {
             })
         }
 
-        this.getCurrent = function(broadcastId) {
-            // CREATE NEW STREAM
+        this.setCurrent = function(broadcastId) {
+            // New Stream
             if (!myStreamRef) {
-                myStreamRef = strCntr.setRef();
+                //myStreamRef = strCntr.setRef();
+                myStreamRef = broadcastsListRef.child(broadcastId).push();
+                strCntr.getDonorStream(broadcastId);
                 myStreamData = {
                     'state': 'pause',
                     'position': 0,
-                    'broadcastId': broadcastId
-                };
+                    'broadcastId': broadcastId,
+                    'lastAlive': Firebase.ServerValue.TIMESTAMP
+                }
                 myStreamRef.set(myStreamData);
-                console.log('CREATE NEW STREAM', myStreamRef.key(), myStreamData);
-            }
 
-            // CHANGE CURRENT BROADCAST
+            }
+            // Change Broadcast
             if (myStreamData.broadcastId != broadcastId) {
-                myStreamData = {
+                // Remove from previous broadcast
+                myStreamRef.remove();
+                // Sub for new broadcast
+                myStreamRef = broadcastsListRef.child(broadcastId).push();
+                // Copy state from last alive stream on this broadcast
+                strCntr.getDonorStream(broadcastId);
+                /*myStreamData = {
                     'state': 'pause',
                     'position': 0,
-                    'broadcastId': broadcastId
-                };
+                    'broadcastId': broadcastId,
+                    'lastAlive': Firebase.ServerValue.TIMESTAMP
+                };*/
                 myStreamRef.set(myStreamData);
+                console.log("change broadcast", myStreamData)
             }
         }
 
         this.set = function() {
             ///// ONLY FOR DEBUG!!!!!!! THIS CLEAR ALL DATA IN DB broadcast LIST !
-            broadcastsListRef.remove();
-            streamsListRef.remove();
+            //broadcastsListRef.remove();
+            //streamsListRef.remove();
             //////////////////////////////////////
 
             // Checking input URL
@@ -176,5 +199,14 @@ $(function() {
             // If URL is not validate
             alert('Введите ссылку на видео...');
         }
+    }
+
+    function guid() {
+        function s4() {
+            return Math.floor((1 + Math.random()) * 0x10000)
+                .toString(16)
+                .substring(1);
+        }
+        return s4() + s4();
     }
 });
