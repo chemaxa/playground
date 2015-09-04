@@ -1,23 +1,18 @@
 $(function() {
     'use strict';
     var broadcastsListRef = new Firebase('https://fiery-heat-9055.firebaseio.com/broadcasts'),
-        streamsListRef = new Firebase('https://fiery-heat-9055.firebaseio.com/streams');
+        streamsListRef = new Firebase('https://fiery-heat-9055.firebaseio.com/streams'),
 
-    //var player = document.getElementById('player');
-
-    var inputBroadcastUrl = document.querySelector('.broadcastUrl');
-    var divBroadcastsList = document.querySelector('.broadcastsList');
-
-    var myStream,
+        myStream,
         myStreamData = {},
-        playerConfig = {};
 
-    playerConfig = {
-        "techOrder": ["youtube"],
-        "src": "www.youtube.com/watch?v=yvRn76Fqyzc"
-    };
 
-    var player = videojs('player', playerConfig);
+        playerConfig = {
+            "techOrder": ["youtube"],
+            "src": "www.youtube.com/watch?v=yvRn76Fqyzc"
+        },
+
+        player = videojs('player', playerConfig);
 
 
     // Set Broadcast Url Button
@@ -28,8 +23,6 @@ $(function() {
     ////////////// WORK WITH PLAYER //////////////////
 
     function setPlayerConfig(conf) {
-
-        console.log(2, conf);
 
         broadcastsListRef.orderByKey().equalTo(conf.broadcastId).on("child_added", function(snapshot) {
             console.log(snapshot.val().src);
@@ -84,8 +77,8 @@ $(function() {
 
 
         for (var key in broadcastsList) {
-            var li = document.createElement('li');
             var a = document.createElement('a');
+            a.classList.add('list-group-item');
 
             (function(broadcastId) {
                 a.addEventListener('click', function() {
@@ -96,8 +89,8 @@ $(function() {
             a.href = 'javascript:void(0)';
             //a.innerHTML = broadcastsList[key].url;
             a.innerHTML = key + '<br>' + broadcastsList[key].src;
-            li.appendChild(a);
-            broadcasts.appendChild(li);
+
+            broadcasts.appendChild(a);
         }
     }
 
