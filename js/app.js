@@ -21,46 +21,47 @@ $(function() {
 
 
     ////////////// WORK WITH PLAYER //////////////////
+    // Constructor PLayer
+    function PlayerConfigurator() {
+        this.setPlayerConfig = function(conf) {
 
-    function setPlayerConfig(conf) {
+            broadcastsListRef.orderByKey().equalTo(conf.broadcastId).on("child_added", function(snapshot) {
+                console.log(snapshot.val().src);
+                player.src(snapshot.val().src);
+            });
 
-        broadcastsListRef.orderByKey().equalTo(conf.broadcastId).on("child_added", function(snapshot) {
-            console.log(snapshot.val().src);
-            player.src(snapshot.val().src);
-        });
+            if (conf.state == 'pause')
+                player.pause();
 
-        if (conf.state == 'pause')
-            player.pause();
+            if (player.currentTime() != conf.position)
+                player.currentTime(Math.round(conf.position));
 
-        if (player.currentTime() != conf.position)
-            player.currentTime(Math.round(conf.position));
+        };
 
-    };
 
-    function logPlayerState() {
-        myStreamData.state = 'play';
-        myStreamData.position = player.currentTime();
+        this.logPlayerState = function() {
+            myStreamData.state = 'play';
+            myStreamData.position = player.currentTime();
 
-        if (player.paused()) {
-            myStreamData.state = 'pause';
+            if (player.paused()) {
+                myStreamData.state = 'pause';
+                if (myStream != undefined) {
+                    broadcastsListRef.orderByKey().equalTo(myStreamData.broadcastId).on("child_added", function(snapshot) {
+                        console.log(snapshot.key(), myStream.key());
+                        //writeDataToDB(snapshot.ref(), );
+                    });
+                }
+            }
+
+
             if (myStream != undefined) {
-                broadcastsListRef.orderByKey().equalTo(myStreamData.broadcastId).on("child_added", function(snapshot) {
-                    console.log(snapshot.key(), myStream.key());
-                    //writeDataToDB(snapshot.ref(), );
-                });
+
+                writeDataToDB(myStream, myStreamData);
             }
         }
 
+    };
 
-        if (myStream != undefined) {
-
-            writeDataToDB(myStream, myStreamData);
-        }
-    }
-
-    function setPlayerState() {
-
-    }
 
     setInterval(logPlayerState, 1000);
 
