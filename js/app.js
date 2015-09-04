@@ -89,6 +89,7 @@ $(function() {
                 console.log('LA ', snapshot.val());
                 console.log('Parent ', snapshot.key());
                 myStreamData = snapshot.val();
+                myStreamRef.set(myStreamData);
             });
         }
         this.updData = function(streamData) {
@@ -142,13 +143,13 @@ $(function() {
                 //myStreamRef = strCntr.setRef();
                 myStreamRef = broadcastsListRef.child(broadcastId).push();
                 strCntr.getDonorStream(broadcastId);
-                myStreamData = {
+                /*myStreamData = {
                     'state': 'pause',
                     'position': 0,
                     'broadcastId': broadcastId,
                     'lastAlive': Firebase.ServerValue.TIMESTAMP
                 }
-                myStreamRef.set(myStreamData);
+                myStreamRef.set(myStreamData);*/
 
             }
             // Change Broadcast
@@ -164,8 +165,8 @@ $(function() {
                     'position': 0,
                     'broadcastId': broadcastId,
                     'lastAlive': Firebase.ServerValue.TIMESTAMP
-                };*/
-                myStreamRef.set(myStreamData);
+                };
+                myStreamRef.set(myStreamData);*/
                 console.log("change broadcast", myStreamData)
             }
         }
