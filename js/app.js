@@ -2,16 +2,20 @@ $(function() {
     'use strict';
     var broadcastsListRef = new Firebase('https://fiery-heat-9055.firebaseio.com/broadcasts'),
         streamsListRef = new Firebase('https://fiery-heat-9055.firebaseio.com/streams'),
-
+        // Html Elements
+        broadcasts = document.getElementById('broadcasts'),
+        // Stream link
         myStream,
+        // Stream state object
         myStreamData = {},
 
-
+        // VideoJS player init config
         playerConfig = {
             "techOrder": ["youtube"],
             "src": "www.youtube.com/watch?v=yvRn76Fqyzc"
         },
 
+        //VideoJS Player Object
         player = videojs('player', playerConfig);
 
 
@@ -19,11 +23,18 @@ $(function() {
     setBroadcast.addEventListener('click', setNewBroadcast, false);
     getBroadcasts.addEventListener('click', getBroadcastList, false);
 
+    //Create  instances of :
+    // Broadcast Controller
+    brdCntrl = new BrdCntr();
+    // Player Controller
+    plrCntrl = new PlCntr();
+    // Stream Controller
+    strCntrl = new StrCntr();
 
     ////////////// WORK WITH PLAYER //////////////////
     // Constructor PLayer
-    function PlayerConfigurator() {
-        this.setPlayerConfig = function(conf) {
+    function PlrCntr() {
+        this.set = function(conf) {
 
             broadcastsListRef.orderByKey().equalTo(conf.broadcastId).on("child_added", function(snapshot) {
                 console.log(snapshot.val().src);
@@ -38,117 +49,95 @@ $(function() {
 
         };
 
-
-        this.logPlayerState = function() {
+        this.log = function() {
             myStreamData.state = 'play';
             myStreamData.position = player.currentTime();
 
             if (player.paused()) {
                 myStreamData.state = 'pause';
-                if (myStream != undefined) {
-                    broadcastsListRef.orderByKey().equalTo(myStreamData.broadcastId).on("child_added", function(snapshot) {
-                        console.log(snapshot.key(), myStream.key());
-                        //writeDataToDB(snapshot.ref(), );
-                    });
-                }
             }
 
-
             if (myStream != undefined) {
-
-                writeDataToDB(myStream, myStreamData);
+                myStream.set(myStreamData);
             }
         }
 
     };
 
 
-    setInterval(logPlayerState, 1000);
-
-    setInterval(setPlayerState, 1000);
-
+    //setInterval(PlrCntr.log, 1000);
+    //setInterval(PlCntr.set, 1000);
 
     /////////// WORK WITH HTML ////////////////////
-
-    function addBroadcastToListCallback(broadcastsList) {
-        // Clear Broadcast List
-        if (broadcasts.children.length) {
-            broadcasts.innerHTML = '';
+    function StrCntr() {
+        this.updateStreamData = function(streamData) {
+            myStreamData.state = streamData.val().state;
+            myStreamData.position = streamData.val().position;
+            // copy state from stream
+            plrCntrl.set(myStreamData);
         }
 
-
-        for (var key in broadcastsList) {
-            var a = document.createElement('a');
-            a.classList.add('list-group-item');
-
-            (function(broadcastId) {
-                a.addEventListener('click', function() {
-                    getCurrentBroadcast(broadcastId);
-                }, false);
-            })(key);
-
-            a.href = 'javascript:void(0)';
-            //a.innerHTML = broadcastsList[key].url;
-            a.innerHTML = key + '<br>' + broadcastsList[key].src;
-
-            broadcasts.appendChild(a);
+        this.setNewStreamRef = function() {
+            return streamsListRef.push();
         }
     }
 
-    function broadcastsList() {
-        broadcastsListRef.once('value', function(dataSnapshot) {
-            addBroadcastToListCallback(dataSnapshot.val());
-        });
-    }
+    function BrdCntr() {
+        this.addToList = function(broadcastsList) {
+            // Clear Broadcast List
+            if (broadcasts.children.length) {
+                broadcasts.innerHTML = '';
+            }
 
+            for (var key in broadcastsList) {
+                var a = document.createElement('a');
+                a.classList.add('list-group-item');
 
-    function getCurrentBroadcast(broadcastId) {
-        // CREATE NEW BROADCAST & STREAM
-        if (!myStream) {
-            myStream = setNewStreamRef();
-            myStreamData = {
-                'state': 'pause',
-                'position': 0,
-                'lastTimeModificated': Firebase.ServerValue.TIMESTAMP,
-                'broadcastId': broadcastId,
-            };
-            writeDataToDB(myStream, myStreamData);
-            console.log('CREATE NEW STREAM', myStream.key(), myStreamData);
+                (function(broadcastId) {
+                    a.addEventListener('click', function() {
+                        getCurrentBroadcast(broadcastId);
+                    }, false);
+                })(key);
+
+                a.href = 'javascript:void(0)';
+                //a.innerHTML = broadcastsList[key].url;
+                a.innerHTML = key + '<br>' + broadcastsList[key].src;
+
+                broadcasts.appendChild(a);
+            }
         }
 
-        // CHANGE CURRENT BROADCAST
-        if (myStreamData.broadcastId != broadcastId) {
-            myStreamData = {
-                'state': 'pause',
-                'position': 0,
-                'lastTimeModificated': Firebase.ServerValue.TIMESTAMP,
-                'broadcastId': broadcastId,
-            };
-            writeDataToDB(myStream, myStreamData);
-
-            updateStreamDataFromLastAliveStream();
+        // Create/Update list of Broadcasts
+        this.broadcastsList = function() {
+            broadcastsListRef.once('value', function(dataSnapshot) {
+                this.addToList(dataSnapshot.val());
+            });
         }
-    }
 
-    function updateStreamDataFromLastAliveStream() {
-        // GET CONF FROM LAST ALIVE STREAM FOR CURRENT BROADCAST
-        streamsListRef.orderByChild("lastTimeModificated").on("child_added", function(dataSnapshot) {
-            if (myStream.key() != dataSnapshot.key() && myStreamData.broadcastId == dataSnapshot.val().broadcastId)
-                updateStreamData(dataSnapshot);
-        });
-    }
+        this.getCurrentBroadcast = function(broadcastId) {
+            // CREATE NEW BROADCAST & STREAM
+            if (!myStream) {
+                myStream = setNewStreamRef();
+                myStreamData = {
+                    'state': 'pause',
+                    'position': 0,
+                    'broadcastId': broadcastId
+                };
+                myStream.set(myStreamData);
+                console.log('CREATE NEW STREAM', myStream.key(), myStreamData);
+            }
 
+            // CHANGE CURRENT BROADCAST
+            if (myStreamData.broadcastId != broadcastId) {
+                myStreamData = {
+                    'state': 'pause',
+                    'position': 0,
+                    'broadcastId': broadcastId
+                };
+                myStream.set(myStreamData);
+            }
+        }
 
-    function updateStreamData(streamData) {
-        myStreamData.state = streamData.val().state;
-        myStreamData.position = streamData.val().position;
-        console.log(1, myStream.key(), streamData.key(), streamData.val(), myStreamData);
-        // copy state from stream
-        setPlayerConfig(myStreamData);
-    }
-
-    function getBroadcastList() {
-        broadcastsList();
     }
 
     function setNewBroadcast() {
@@ -169,7 +158,7 @@ $(function() {
                     techOrder: u.host
                 };
 
-            writeDataToDB(newBroadcastRef, newBroadcastData);
+            dbCntrl.write(newBroadcastRef, newBroadcastData);
             //getBroadcast();
             inputGetUrl.value = inputPutUrl.value;
             return;
@@ -177,15 +166,7 @@ $(function() {
         alert('Введите УРЛ');
     }
 
-    function setNewStreamRef() {
-        return streamsListRef.push();
-    }
 
-    function writeDataToDB(ref, data) {
-        ref.set(data);
-    }
 
-    function deleteDataFromDB(ref) {
-        ref.remove();
-    }
+
 });
