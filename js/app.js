@@ -6,7 +6,7 @@ $(function() {
         // Html Elements
         broadcasts = document.getElementById('broadcasts'),
         inputPutUrl = document.getElementById('inputPutUrl'),
-        // Stream 
+        // Stream reference
         myStreamRef,
         // Stream state object
         myStreamData = {},
@@ -22,19 +22,24 @@ $(function() {
 
         //Create  instances of :
         // Broadcast Controller
-        brdCntrl = new BrdCntr(),
+        brdCntr = new BrdCntr(),
         // Player Controller
-        plrCntrl = new PlCntr(),
+        plrCntr = new PlrCntr(),
         // Stream Controller
-        strCntrl = new StrCntr();
+        strCntr = new StrCntr();
 
 
     // Add events
-    setBroadcast.addEventListener('click', brdCntrl.set, false);
-    getBroadcasts.addEventListener('click', getBroadcastList, false);
-    //setInterval(PlrCntr.log, 1000);
+    setBroadcast.addEventListener('click', brdCntr.set, false);
+    getBroadcasts.addEventListener('click', brdCntr.list, false);
+    //setInterval(plrCntr.log, 1000);
     //setInterval(PlCntr.set, 1000);
-
+    player.on('play', function() {
+        plrCntr.log();
+    });
+    player.on('pause', function() {
+        plrCntr.log();
+    });
     // PLayer Constructor 
     function PlrCntr() {
         this.set = function(conf) {
@@ -53,12 +58,16 @@ $(function() {
         };
 
         this.log = function() {
-            myStreamData.state = 'play';
-            myStreamData.position = player.currentTime();
 
             if (player.paused()) {
                 myStreamData.state = 'pause';
+                console.log('I am paused');
+            } else {
+                console.log('I am played');
+                myStreamData.state = 'play';
             }
+
+            myStreamData.position = player.currentTime();
 
             if (myStreamRef != undefined) {
                 myStreamRef.set(myStreamData);
@@ -69,11 +78,11 @@ $(function() {
 
     //Stream Controller 
     function StrCntr() {
-        this.updateStreamData = function(streamData) {
+        this.updData = function(streamData) {
             myStreamData.state = streamData.val().state;
             myStreamData.position = streamData.val().position;
             // copy state from stream
-            plrCntrl.set(myStreamData);
+            plrCntr.set(myStreamData);
         }
 
         this.setRef = function() {
@@ -84,9 +93,9 @@ $(function() {
 
     // Broadcast Controller
     function BrdCntr() {
-
+        var self = this;
         // Create/Update list of Broadcasts
-        this.List = function() {
+        this.list = function() {
             broadcastsListRef.once('value', function(dataSnapshot) {
 
                 // Clear Broadcast List
@@ -100,7 +109,7 @@ $(function() {
 
                     (function(broadcastId) {
                         a.addEventListener('click', function() {
-                            this.getCurrent(broadcastId);
+                            self.getCurrent(broadcastId);
                         }, false);
                     })(key);
 
@@ -140,8 +149,8 @@ $(function() {
 
         this.set = function() {
             ///// ONLY FOR DEBUG!!!!!!! THIS CLEAR ALL DATA IN DB broadcast LIST !
-            //broadcastsListRef.remove();
-            //streamsListRef.remove();
+            broadcastsListRef.remove();
+            streamsListRef.remove();
             //////////////////////////////////////
 
             // Checking input URL
@@ -159,7 +168,7 @@ $(function() {
                         techOrder: u.host
                     };
                 // Write created broadcast to DB
-                dbCntrl.write(newBroadcastRef, newBroadcastData);
+                newBroadcastRef.set(newBroadcastData);
                 // Set inputed URL value for copy
                 inputGetUrl.value = inputPutUrl.value;
                 return;
