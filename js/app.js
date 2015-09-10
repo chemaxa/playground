@@ -1,9 +1,8 @@
-$(function() {
+$(function () {
     'use strict';
     // Firebase Refs
     var broadcastsListRef = new Firebase('https://fiery-heat-9055.firebaseio.com/broadcasts'),
-        streamsListRef = new Firebase('https://fiery-heat-9055.firebaseio.com/streams'),
-
+        
         // Stream reference
         myStreamRef,
         // Stream state object
@@ -35,36 +34,33 @@ $(function() {
     getBroadcasts.addEventListener('click', brdCntr.list, false);
     setInterval(plrCntr.log, 1000);
     //setInterval(PlCntr.set, 1000);
-    player.on('play', function() {
+    player.on('play', function () {
         plrCntr.log();
     });
-    player.on('pause', function() {
+    player.on('pause', function () {
         plrCntr.log();
     });
     // PLayer Constructor 
     function PlrCntr() {
-        this.set = function(conf) {
-
-            broadcastsListRef.orderByKey().equalTo(conf.broadcastId).on("child_added", function(snapshot) {
-                console.log(snapshot.val().src);
-                player.src(snapshot.val().src);
-            });
+        this.set = function (conf) {
 
             if (conf.state == 'pause')
                 player.pause();
 
             if (player.currentTime() != conf.position)
                 player.currentTime(Math.round(conf.position));
-
+            player.src(conf.src);
         };
 
-        this.log = function() {
+        this.log = function () {
 
             if (player.paused()) {
                 myStreamData.state = 'pause';
                 console.log('I am paused');
+                console.log(myStreamData)
             } else {
                 console.log('I am played');
+                console.log(myStreamData)
                 myStreamData.state = 'play';
             }
 
@@ -80,37 +76,33 @@ $(function() {
 
     //Stream Controller 
     function StrCntr() {
-        this.setMyStream = function() {
+        this.setMyStream = function () {
 
         }
-        this.getDonorStream = function(broadcastId) {
+        this.getDonorStream = function (broadcastId) {
             var ref = new Firebase(broadcastsListRef.toString() + "/" + broadcastId);
-            ref.orderByChild('lastAlive').limitToLast(2).on("child_added", function(snapshot) {
+            ref.orderByChild('lastAlive').limitToLast(1).on("child_added", function (snapshot) {
                 console.log('LA ', snapshot.val());
                 console.log('Parent ', snapshot.key());
+                console.log(myStreamData);
                 myStreamData = snapshot.val();
-                myStreamRef.set(myStreamData);
+                //plrCntr.set(myStreamData); 
             });
         }
-        this.updData = function(streamData) {
+        this.updData = function (streamData) {
             myStreamData.state = streamData.val().state;
             myStreamData.position = streamData.val().position;
             // copy state from stream
             plrCntr.set(myStreamData);
         }
-
-        this.setRef = function() {
-            return streamsListRef.push();
-        }
-
     }
 
     // Broadcast Controller
     function BrdCntr() {
         var self = this;
         // Create/Update list of Broadcasts
-        this.list = function() {
-            broadcastsListRef.once('value', function(dataSnapshot) {
+        this.list = function () {
+            broadcastsListRef.once('value', function (dataSnapshot) {
 
                 // Clear Broadcast List
                 if (broadcasts.children.length) {
@@ -121,8 +113,8 @@ $(function() {
                     var a = document.createElement('a');
                     a.classList.add('list-group-item');
 
-                    (function(broadcastId) {
-                        a.addEventListener('click', function() {
+                    (function (broadcastId) {
+                        a.addEventListener('click', function () {
                             self.setCurrent(broadcastId);
                         }, false);
                     })(key);
@@ -137,20 +129,19 @@ $(function() {
             })
         }
 
-        this.setCurrent = function(broadcastId) {
+        this.setCurrent = function (broadcastId) {
             // New Stream
             if (!myStreamRef) {
-                //myStreamRef = strCntr.setRef();
                 myStreamRef = broadcastsListRef.child(broadcastId).push();
                 strCntr.getDonorStream(broadcastId);
-                /*myStreamData = {
+                myStreamData = {
                     'state': 'pause',
                     'position': 0,
                     'broadcastId': broadcastId,
                     'lastAlive': Firebase.ServerValue.TIMESTAMP
                 }
-                myStreamRef.set(myStreamData);*/
-
+                myStreamRef.set(myStreamData);
+                myStreamRef.onDisconnect().remove();
             }
             // Change Broadcast
             if (myStreamData.broadcastId != broadcastId) {
@@ -165,16 +156,16 @@ $(function() {
                     'position': 0,
                     'broadcastId': broadcastId,
                     'lastAlive': Firebase.ServerValue.TIMESTAMP
-                };
-                myStreamRef.set(myStreamData);*/
+                };*/
+                myStreamRef.set(myStreamData);
+                myStreamRef.onDisconnect().remove();
                 console.log("change broadcast", myStreamData)
             }
         }
 
-        this.set = function() {
+        this.set = function () {
             ///// ONLY FOR DEBUG!!!!!!! THIS CLEAR ALL DATA IN DB broadcast LIST !
             //broadcastsListRef.remove();
-            //streamsListRef.remove();
             //////////////////////////////////////
 
             // Checking input URL
@@ -202,5 +193,12 @@ $(function() {
         }
     }
 
-
+    function guid() {
+        function s4() {
+            return Math.floor((1 + Math.random()) * 0x10000)
+                .toString(16)
+                .substring(1);
+        }
+        return s4() + s4();
+    }
 });
