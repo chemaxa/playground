@@ -2,8 +2,7 @@ $(function () {
     'use strict';
     // Firebase Refs
     var broadcastsListRef = new Firebase('https://fiery-heat-9055.firebaseio.com/broadcasts'),
-        streamsListRef = new Firebase('https://fiery-heat-9055.firebaseio.com/streams'),
-
+        
         // Stream reference
         myStreamRef,
         // Stream state object
@@ -45,17 +44,12 @@ $(function () {
     function PlrCntr() {
         this.set = function (conf) {
 
-            broadcastsListRef.orderByKey().equalTo(conf.broadcastId).on("child_added", function (snapshot) {
-                console.log(snapshot.val().src);
-                player.src(snapshot.val().src);
-            });
-
             if (conf.state == 'pause')
                 player.pause();
 
             if (player.currentTime() != conf.position)
                 player.currentTime(Math.round(conf.position));
-
+            player.src(conf.src);
         };
 
         this.log = function () {
@@ -63,8 +57,10 @@ $(function () {
             if (player.paused()) {
                 myStreamData.state = 'pause';
                 console.log('I am paused');
+                console.log(myStreamData)
             } else {
                 console.log('I am played');
+                console.log(myStreamData)
                 myStreamData.state = 'play';
             }
 
@@ -85,10 +81,12 @@ $(function () {
         }
         this.getDonorStream = function (broadcastId) {
             var ref = new Firebase(broadcastsListRef.toString() + "/" + broadcastId);
-            ref.orderByChild('lastAlive').limitToLast(2).on("child_added", function (snapshot) {
+            ref.orderByChild('lastAlive').limitToLast(1).on("child_added", function (snapshot) {
                 console.log('LA ', snapshot.val());
                 console.log('Parent ', snapshot.key());
+                console.log(myStreamData);
                 myStreamData = snapshot.val();
+                //plrCntr.set(myStreamData);
             });
         }
         this.updData = function (streamData) {
@@ -97,11 +95,6 @@ $(function () {
             // copy state from stream
             plrCntr.set(myStreamData);
         }
-
-        this.setRef = function () {
-            return streamsListRef.push();
-        }
-
     }
 
     // Broadcast Controller
@@ -139,7 +132,6 @@ $(function () {
         this.setCurrent = function (broadcastId) {
             // New Stream
             if (!myStreamRef) {
-                //myStreamRef = strCntr.setRef();
                 myStreamRef = broadcastsListRef.child(broadcastId).push();
                 strCntr.getDonorStream(broadcastId);
                 myStreamData = {
@@ -166,6 +158,7 @@ $(function () {
                     'lastAlive': Firebase.ServerValue.TIMESTAMP
                 };*/
                 myStreamRef.set(myStreamData);
+                myStreamRef.onDisconnect().remove();
                 console.log("change broadcast", myStreamData)
             }
         }
@@ -173,7 +166,6 @@ $(function () {
         this.set = function () {
             ///// ONLY FOR DEBUG!!!!!!! THIS CLEAR ALL DATA IN DB broadcast LIST !
             //broadcastsListRef.remove();
-            //streamsListRef.remove();
             //////////////////////////////////////
 
             // Checking input URL
