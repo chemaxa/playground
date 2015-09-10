@@ -86,7 +86,7 @@ $(function () {
                 console.log('Parent ', snapshot.key());
                 console.log(myStreamData);
                 myStreamData = snapshot.val();
-                //plrCntr.set(myStreamData);
+                //plrCntr.set(myStreamData); 
             });
         }
         this.updData = function (streamData) {
