@@ -127,7 +127,9 @@ The default control bar that is a container for most of the controls.
 
 .vjs-default-skin.vjs-has-started.vjs-user-inactive.vjs-playing .vjs-control-bar {
     display: block;
-    /*visibility: hidden;*/
+    /*visibility: hidden;
+        opacity: 0;
+    */
     opacity: 1;
     /* transition */
     -webkit-transition: visibility 1s, opacity 1s;

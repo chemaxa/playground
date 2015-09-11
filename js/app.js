@@ -13,10 +13,10 @@ $(function() {
         // VideoJS player init config
         playerConfig = {
             "techOrder": ["youtube"],
-            "src": "www.youtube.com/watch?v=yvRn76Fqyzc",
-            "controls": true
+            "src": "www.youtube.com/watch?v=yvRn76Fqyzc"
         },
-
+        // Set user active
+        userAction = false,
         //VideoJS Player Object
         player = videojs('player', playerConfig),
 
@@ -35,21 +35,31 @@ $(function() {
     setInterval(plrCntr.log, 1000);
     //setInterval(PlCntr.set, 1000);
 
+
     player.on('play', function() {
+        userAction = true;
         plrCntr.log();
     });
     player.on('pause', function() {
+        userAction = true;
         plrCntr.log();
     });
 
     // PLayer Constructor 
     function PlrCntr() {
+        this.checkState = function(broadcastId) {
+            var ref = new Firebase(broadcastsListRef.toString() + "/" + broadcastId);
+            ref.on("value", function(snapshot) {
+                console.log(snapshot.val());
+            });
+        }
 
         this.set = function(conf) {
             player.src(conf.src);
 
-            if (player.currentTime() != conf.position)
-                player.currentTime(Math.round(conf.position));
+            if (player.currentTime() != conf.position) {
+                //player.currentTime(Math.round(conf.position));
+            }
             if (conf.state == 'pause')
                 player.pause();
             else
@@ -70,10 +80,14 @@ $(function() {
             myStreamData.position = player.currentTime();
             myStreamData.lastAlive = Firebase.ServerValue.TIMESTAMP;
 
-            if (myStreamRef != undefined) {
+            if (myStreamRef) {
                 myStreamRef.set(myStreamData);
-                //brdCntr.setStateBroadcast(myStreamData);
+                brdCntr.setStateBroadcast(myStreamData);
             }
+            /*if (userAction) {
+                brdCntr.setStateBroadcast(myStreamData);
+                userAction = false;
+            }*/
         }
 
     };
@@ -209,11 +223,20 @@ $(function() {
                 // Remove stream ondisconnect
                 myStreamRef.onDisconnect().remove();
             }
+            (function(broadcastId) {
+                var ref = new Firebase(broadcastsListRef.toString() + "/" + broadcastId);
+                ref.once("value", function(snapshot) {
+                    console.log("Play state: ", snapshot.val()['state'], userAction);
+                    plrCntr.set(snapshot.val());
+                })
+            })(broadcastId)
+
         }
 
         this.setStateBroadcast = function(myStreamData) {
             var ref = new Firebase(broadcastsListRef.toString() + "/" + myStreamData.broadcastId);
-            ref.set({
+            console.log(ref.toString());
+            ref.update({
                 'state': myStreamData.state,
                 'src': myStreamData.src,
                 'techOrder': myStreamData.techOrder
