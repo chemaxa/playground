@@ -33,12 +33,14 @@ $(function() {
     getBroadcasts.addEventListener('click', brdCntr.list, false);
     setInterval(plrCntr.log, 1000);
     //setInterval(PlCntr.set, 1000);
+
     player.on('play', function() {
         plrCntr.log();
     });
     player.on('pause', function() {
         plrCntr.log();
     });
+
     // PLayer Constructor 
     function PlrCntr() {
 
@@ -49,6 +51,7 @@ $(function() {
 
             if (player.currentTime() != conf.position)
                 player.currentTime(Math.round(conf.position));
+            console.log('PC ', conf);
             player.src(conf.src);
         };
 
@@ -79,9 +82,16 @@ $(function() {
 
         var self = this;
         this.getDonorStream = function(broadcastId) {
-            var ref = new Firebase(broadcastsListRef.toString() + "/" + broadcastId);
-            ref.once("value", function(snapshot) {
-                // If broadcast have streams
+            var ref = new Firebase(broadcastsListRef.toString() + "/" + broadcastId),
+                src,
+                techOrder;
+
+            ref.on("child_added", function(snapshot) {
+                //Get URL & TechOrder video
+                ref.once("value", function(snapshot) {
+                    src = snapshot.val()['src'];
+                    techOrder = snapshot.val()['techOrder']
+                });
                 if (snapshot.hasChildren()) {
                     ref.orderByChild('lastAlive').limitToLast(1).on("child_added", function(snapshot) {
                         console.log('LA ', snapshot.val());
@@ -97,18 +107,15 @@ $(function() {
                         'state': 'pause',
                         'position': 0,
                         'broadcastId': broadcastId,
-                        'lastAlive': Firebase.ServerValue.TIMESTAMP
+                        'lastAlive': Firebase.ServerValue.TIMESTAMP,
+                        'src': src,
+                        'techOrder': techOrder
                     }
                     myStreamRef.set(myStreamData);
+                    //Start player
+                    plrCntr.set(myStreamData);
                 }
             })
-
-        }
-        this.updData = function(streamData) {
-            myStreamData.state = streamData.val().state;
-            myStreamData.position = streamData.val().position;
-            // copy state from stream
-            plrCntr.set(myStreamData);
         }
     }
 
@@ -198,12 +205,5 @@ $(function() {
         }
     }
 
-    function guid() {
-        function s4() {
-            return Math.floor((1 + Math.random()) * 0x10000)
-                .toString(16)
-                .substring(1);
-        }
-        return s4() + s4();
-    }
+
 });
