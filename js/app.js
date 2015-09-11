@@ -1,8 +1,8 @@
-$(function () {
+$(function() {
     'use strict';
     // Firebase Refs
     var broadcastsListRef = new Firebase('https://fiery-heat-9055.firebaseio.com/broadcasts'),
-        
+
         // Stream reference
         myStreamRef,
         // Stream state object
@@ -34,15 +34,15 @@ $(function () {
     getBroadcasts.addEventListener('click', brdCntr.list, false);
     setInterval(plrCntr.log, 1000);
     //setInterval(PlCntr.set, 1000);
-    player.on('play', function () {
+    player.on('play', function() {
         plrCntr.log();
     });
-    player.on('pause', function () {
+    player.on('pause', function() {
         plrCntr.log();
     });
     // PLayer Constructor 
     function PlrCntr() {
-        this.set = function (conf) {
+        this.set = function(conf) {
 
             if (conf.state == 'pause')
                 player.pause();
@@ -52,7 +52,7 @@ $(function () {
             player.src(conf.src);
         };
 
-        this.log = function () {
+        this.log = function() {
 
             if (player.paused()) {
                 myStreamData.state = 'pause';
@@ -76,20 +76,33 @@ $(function () {
 
     //Stream Controller 
     function StrCntr() {
-        this.setMyStream = function () {
-
-        }
-        this.getDonorStream = function (broadcastId) {
+        var self = this;
+        this.getDonorStream = function(broadcastId) {
             var ref = new Firebase(broadcastsListRef.toString() + "/" + broadcastId);
-            ref.orderByChild('lastAlive').limitToLast(1).on("child_added", function (snapshot) {
-                console.log('LA ', snapshot.val());
-                console.log('Parent ', snapshot.key());
-                console.log(myStreamData);
-                myStreamData = snapshot.val();
-                //plrCntr.set(myStreamData); 
-            });
+            ref.once("value", function(snapshot) {
+                // If broadcast have streams
+                if (snapshot.hasChildren()) {
+                    ref.orderByChild('lastAlive').limitToLast(1).on("child_added", function(snapshot) {
+                        console.log('LA ', snapshot.val());
+                        console.log('Parent ', snapshot.key());
+                        console.log(myStreamData);
+                        myStreamData = snapshot.val();
+                        myStreamRef.set(myStreamData);
+                        //plrCntr.set(myStreamData); 
+                    });
+                } else {
+                    // Create own default stream 
+                    myStreamData = {
+                        'state': 'pause',
+                        'position': 0,
+                        'broadcastId': broadcastId,
+                        'lastAlive': Firebase.ServerValue.TIMESTAMP
+                    }
+                    myStreamRef.set(myStreamData);
+                }
+            })
         }
-        this.updData = function (streamData) {
+        this.updData = function(streamData) {
             myStreamData.state = streamData.val().state;
             myStreamData.position = streamData.val().position;
             // copy state from stream
@@ -101,8 +114,8 @@ $(function () {
     function BrdCntr() {
         var self = this;
         // Create/Update list of Broadcasts
-        this.list = function () {
-            broadcastsListRef.once('value', function (dataSnapshot) {
+        this.list = function() {
+            broadcastsListRef.once('value', function(dataSnapshot) {
 
                 // Clear Broadcast List
                 if (broadcasts.children.length) {
@@ -113,8 +126,8 @@ $(function () {
                     var a = document.createElement('a');
                     a.classList.add('list-group-item');
 
-                    (function (broadcastId) {
-                        a.addEventListener('click', function () {
+                    (function(broadcastId) {
+                        a.addEventListener('click', function() {
                             self.setCurrent(broadcastId);
                         }, false);
                     })(key);
@@ -129,41 +142,30 @@ $(function () {
             })
         }
 
-        this.setCurrent = function (broadcastId) {
+        this.setCurrent = function(broadcastId) {
             // New Stream
             if (!myStreamRef) {
+                // Create ref on my stream
                 myStreamRef = broadcastsListRef.child(broadcastId).push();
+                // Copy state from last alive stream on this broadcast
                 strCntr.getDonorStream(broadcastId);
-                myStreamData = {
-                    'state': 'pause',
-                    'position': 0,
-                    'broadcastId': broadcastId,
-                    'lastAlive': Firebase.ServerValue.TIMESTAMP
-                }
-                myStreamRef.set(myStreamData);
+                // Remove stream ondisconnect
                 myStreamRef.onDisconnect().remove();
             }
             // Change Broadcast
             if (myStreamData.broadcastId != broadcastId) {
-                // Remove from previous broadcast
+                // Remove ref from previous broadcast
                 myStreamRef.remove();
                 // Sub for new broadcast
                 myStreamRef = broadcastsListRef.child(broadcastId).push();
                 // Copy state from last alive stream on this broadcast
                 strCntr.getDonorStream(broadcastId);
-                /*myStreamData = {
-                    'state': 'pause',
-                    'position': 0,
-                    'broadcastId': broadcastId,
-                    'lastAlive': Firebase.ServerValue.TIMESTAMP
-                };*/
-                myStreamRef.set(myStreamData);
+                // Remove stream ondisconnect
                 myStreamRef.onDisconnect().remove();
-                console.log("change broadcast", myStreamData)
             }
         }
 
-        this.set = function () {
+        this.set = function() {
             ///// ONLY FOR DEBUG!!!!!!! THIS CLEAR ALL DATA IN DB broadcast LIST !
             //broadcastsListRef.remove();
             //////////////////////////////////////
