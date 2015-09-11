@@ -2,7 +2,6 @@ $(function() {
     'use strict';
     // Firebase Refs
     var broadcastsListRef = new Firebase('https://fiery-heat-9055.firebaseio.com/broadcasts'),
-
         // Stream reference
         myStreamRef,
         // Stream state object
@@ -42,6 +41,7 @@ $(function() {
     });
     // PLayer Constructor 
     function PlrCntr() {
+
         this.set = function(conf) {
 
             if (conf.state == 'pause')
@@ -76,6 +76,7 @@ $(function() {
 
     //Stream Controller 
     function StrCntr() {
+
         var self = this;
         this.getDonorStream = function(broadcastId) {
             var ref = new Firebase(broadcastsListRef.toString() + "/" + broadcastId);
@@ -101,6 +102,7 @@ $(function() {
                     myStreamRef.set(myStreamData);
                 }
             })
+
         }
         this.updData = function(streamData) {
             myStreamData.state = streamData.val().state;
@@ -149,6 +151,7 @@ $(function() {
                 myStreamRef = broadcastsListRef.child(broadcastId).push();
                 // Copy state from last alive stream on this broadcast
                 strCntr.getDonorStream(broadcastId);
+
                 // Remove stream ondisconnect
                 myStreamRef.onDisconnect().remove();
             }
