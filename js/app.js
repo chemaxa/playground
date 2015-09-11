@@ -99,7 +99,6 @@ $(function() {
                         'lastAlive': Firebase.ServerValue.TIMESTAMP
                     }
                     myStreamRef.set(myStreamData);
-
                 }
             })
         }
