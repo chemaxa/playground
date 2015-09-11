@@ -1,190 +1,275 @@
 $(function() {
     'use strict';
+    // Firebase Refs
     var broadcastsListRef = new Firebase('https://fiery-heat-9055.firebaseio.com/broadcasts'),
-        streamsListRef = new Firebase('https://fiery-heat-9055.firebaseio.com/streams'),
-
-        myStream,
+        // Stream reference
+        myStreamRef,
+        // Stream state object
         myStreamData = {},
 
-
+        // Html Elements
+        broadcasts = document.getElementById('broadcasts'),
+        inputPutUrl = document.getElementById('inputPutUrl'),
+        // VideoJS player init config
         playerConfig = {
             "techOrder": ["youtube"],
             "src": "www.youtube.com/watch?v=yvRn76Fqyzc"
         },
+        // Set user active
+        userAction = false,
+        //VideoJS Player Object
+        player = videojs('player', playerConfig),
 
-        player = videojs('player', playerConfig);
+        //Create  instances of :
+        // Broadcast Controller
+        brdCntr = new BrdCntr(),
+        // Player Controller
+        plrCntr = new PlrCntr(),
+        // Stream Controller
+        strCntr = new StrCntr();
 
 
-    // Set Broadcast Url Button
-    setBroadcast.addEventListener('click', setNewBroadcast, false);
-    getBroadcasts.addEventListener('click', getBroadcastList, false);
+    // Add events
+    setBroadcast.addEventListener('click', brdCntr.set, false);
+    getBroadcasts.addEventListener('click', brdCntr.list, false);
+    setInterval(plrCntr.log, 1000);
+    //setInterval(PlCntr.set, 1000);
 
 
-    ////////////// WORK WITH PLAYER //////////////////
+    player.on('play', function() {
+        userAction = true;
+        plrCntr.log();
+    });
+    player.on('pause', function() {
+        userAction = true;
+        plrCntr.log();
+    });
 
-    function setPlayerConfig(conf) {
+    // PLayer Constructor 
+    function PlrCntr() {
+        this.checkState = function(broadcastId) {
+            var ref = new Firebase(broadcastsListRef.toString() + "/" + broadcastId);
+            ref.on("value", function(snapshot) {
+                console.log(snapshot.val());
+            });
+        }
 
-        broadcastsListRef.orderByKey().equalTo(conf.broadcastId).on("child_added", function(snapshot) {
-            console.log(snapshot.val().src);
-            player.src(snapshot.val().src);
-        });
+        this.set = function(conf) {
+            player.src(conf.src);
 
-        if (conf.state == 'pause')
-            player.pause();
+            if (player.currentTime() != conf.position) {
+                //player.currentTime(Math.round(conf.position));
+            }
+            if (conf.state == 'pause')
+                player.pause();
+            else
+                player.play();
 
-        if (player.currentTime() != conf.position)
-            player.currentTime(Math.round(conf.position));
+            console.log('PC ', conf);
+
+        };
+
+        this.log = function() {
+
+            if (player.paused()) {
+                myStreamData.state = 'pause';
+            } else {
+                myStreamData.state = 'play';
+            }
+
+            myStreamData.position = player.currentTime();
+            myStreamData.lastAlive = Firebase.ServerValue.TIMESTAMP;
+
+            if (myStreamRef) {
+                myStreamRef.set(myStreamData);
+                brdCntr.setStateBroadcast(myStreamData);
+            }
+            /*if (userAction) {
+                brdCntr.setStateBroadcast(myStreamData);
+                userAction = false;
+            }*/
+        }
 
     };
 
-    function logPlayerState() {
-        myStreamData.state = 'play';
-        myStreamData.position = player.currentTime();
+    //Stream Controller 
+    function StrCntr() {
 
-        if (player.paused()) {
-            myStreamData.state = 'pause';
-            if (myStream != undefined) {
-                broadcastsListRef.orderByKey().equalTo(myStreamData.broadcastId).on("child_added", function(snapshot) {
-                    console.log(snapshot.key(), myStream.key());
-                    //writeDataToDB(snapshot.ref(), );
+        var self = this;
+        this.setNewStream = function(broadcastId) {
+            console.log('Child NOT exist');
+            var ref = new Firebase(broadcastsListRef.toString() + "/" + broadcastId),
+                createStream = new Promise(function(resolve, reject) {
+                    ref.once("value", function(snapshot) {
+                        resolve(snapshot);
+                    }, function(err) {
+                        reject(err)
+                    });
                 });
+            createStream.then(create, error);
+            //Get URL & TechOrder video
+            function create(data) {
+                // Create own default stream 
+                myStreamData = {
+                    'state': 'pause',
+                    'position': 0,
+                    'broadcastId': broadcastId,
+                    'lastAlive': Firebase.ServerValue.TIMESTAMP,
+                    'src': data.val()['src'],
+                    'techOrder': data.val()['techOrder']
+                }
+                console.log('Start state: ', myStreamData);
+                // Create ref on my stream
+                myStreamRef = broadcastsListRef.child(broadcastId).push();
+                console.log(myStreamRef.toString())
+                    // Save my state
+                myStreamRef.set(myStreamData);
+                // Remove stream ondisconnect
+                myStreamRef.onDisconnect().remove();
+                //Start player
+                plrCntr.set(myStreamData);
+            }
+
+
+            function error(err) {
+                console.error(err);
+            }
+
+        }
+
+        this.getDonorStream = function(broadcastId) {
+            var ref = new Firebase(broadcastsListRef.toString() + "/" + broadcastId),
+                hasChild = new Promise(function(resolve, reject) {
+                    ref.once("child_added", function(snapshot) {
+                        console.log('Snapshot: ', snapshot.val());
+                        resolve(snapshot.hasChildren());
+                    }, function(err) {
+                        reject(err);
+                    })
+                });
+
+            hasChild.then(childExist, error);
+
+            function childExist(data) {
+                // If child exist
+                if (data) {
+                    console.log('Child exist');
+                    ref.orderByChild('lastAlive').limitToLast(1).once("child_added", function(snapshot) {
+
+                        myStreamData = snapshot.val();
+                        console.log('Copy state: ', myStreamData);
+                        // Copy state from last alive stream
+                        if (!myStreamRef)
+                            myStreamRef = broadcastsListRef.child(broadcastId).push();
+                        myStreamRef.set(myStreamData);
+                        // Setting player
+                        plrCntr.set(myStreamData);
+                    });
+                } else {
+                    self.setNewStream(broadcastId);
+                }
+            }
+
+            function error(data) {
+                console.error(data);
             }
         }
-
-
-        if (myStream != undefined) {
-
-            writeDataToDB(myStream, myStreamData);
-        }
     }
 
-    function setPlayerState() {
+    // Broadcast Controller
+    function BrdCntr() {
+        var self = this;
+        // Create/Update list of Broadcasts
+        this.list = function() {
+            broadcastsListRef.once('value', function(dataSnapshot) {
 
-    }
+                // Clear Broadcast List
+                if (broadcasts.children.length) {
+                    broadcasts.innerHTML = '';
+                }
 
-    setInterval(logPlayerState, 1000);
+                for (var key in dataSnapshot.val()) {
+                    var a = document.createElement('a');
+                    a.classList.add('list-group-item');
 
-    setInterval(setPlayerState, 1000);
+                    (function(broadcastId) {
+                        a.addEventListener('click', function() {
+                            self.setCurrent(broadcastId);
+                        }, false);
+                    })(key);
 
+                    a.href = 'javascript:void(0)';
+                    //a.innerHTML = dataSnapshot.val()[key].url;
+                    a.innerHTML = key + '<br>' + dataSnapshot.val()[key].src;
 
-    /////////// WORK WITH HTML ////////////////////
+                    broadcasts.appendChild(a);
+                }
 
-    function addBroadcastToListCallback(broadcastsList) {
-        // Clear Broadcast List
-        if (broadcasts.children.length) {
-            broadcasts.innerHTML = '';
+            })
         }
 
-
-        for (var key in broadcastsList) {
-            var a = document.createElement('a');
-            a.classList.add('list-group-item');
-
+        this.setCurrent = function(broadcastId) {
+            // New Stream
+            if (!myStreamRef) {
+                // Copy state from last alive stream on this broadcast
+                strCntr.getDonorStream(broadcastId);
+            }
+            // Change Broadcast
+            if (myStreamRef && myStreamData.broadcastId != broadcastId) {
+                // Remove ref from previous broadcast
+                myStreamRef.remove();
+                // Copy state from last alive stream on this broadcast
+                strCntr.getDonorStream(broadcastId);
+                // Remove stream ondisconnect
+                myStreamRef.onDisconnect().remove();
+            }
             (function(broadcastId) {
-                a.addEventListener('click', function() {
-                    getCurrentBroadcast(broadcastId);
-                }, false);
-            })(key);
+                var ref = new Firebase(broadcastsListRef.toString() + "/" + broadcastId);
+                ref.once("value", function(snapshot) {
+                    console.log("Play state: ", snapshot.val()['state'], userAction);
+                    plrCntr.set(snapshot.val());
+                })
+            })(broadcastId)
 
-            a.href = 'javascript:void(0)';
-            //a.innerHTML = broadcastsList[key].url;
-            a.innerHTML = key + '<br>' + broadcastsList[key].src;
-
-            broadcasts.appendChild(a);
-        }
-    }
-
-    function broadcastsList() {
-        broadcastsListRef.once('value', function(dataSnapshot) {
-            addBroadcastToListCallback(dataSnapshot.val());
-        });
-    }
-
-
-    function getCurrentBroadcast(broadcastId) {
-        // CREATE NEW BROADCAST & STREAM
-        if (!myStream) {
-            myStream = setNewStreamRef();
-            myStreamData = {
-                'state': 'pause',
-                'position': 0,
-                'lastTimeModificated': Firebase.ServerValue.TIMESTAMP,
-                'broadcastId': broadcastId,
-            };
-            writeDataToDB(myStream, myStreamData);
-            console.log('CREATE NEW STREAM', myStream.key(), myStreamData);
         }
 
-        // CHANGE CURRENT BROADCAST
-        if (myStreamData.broadcastId != broadcastId) {
-            myStreamData = {
-                'state': 'pause',
-                'position': 0,
-                'lastTimeModificated': Firebase.ServerValue.TIMESTAMP,
-                'broadcastId': broadcastId,
-            };
-            writeDataToDB(myStream, myStreamData);
-
-            updateStreamDataFromLastAliveStream();
+        this.setStateBroadcast = function(myStreamData) {
+            var ref = new Firebase(broadcastsListRef.toString() + "/" + myStreamData.broadcastId);
+            console.log(ref.toString());
+            ref.update({
+                'state': myStreamData.state,
+                'src': myStreamData.src,
+                'techOrder': myStreamData.techOrder
+            });
         }
-    }
 
-    function updateStreamDataFromLastAliveStream() {
-        // GET CONF FROM LAST ALIVE STREAM FOR CURRENT BROADCAST
-        streamsListRef.orderByChild("lastTimeModificated").on("child_added", function(dataSnapshot) {
-            if (myStream.key() != dataSnapshot.key() && myStreamData.broadcastId == dataSnapshot.val().broadcastId)
-                updateStreamData(dataSnapshot);
-        });
-    }
+        this.set = function() {
+            ///// ONLY FOR DEBUG!!!!!!! THIS CLEAR ALL DATA IN DB broadcast LIST !
+            //broadcastsListRef.remove();
+            //////////////////////////////////////
 
+            // Checking input URL
+            var expression = /[-a-zA-Z0-9@:%_\+.~#?&//=]{2,256}\.[a-z]{2,4}\b(\/[-a-zA-Z0-9@:%_\+.~#?&//=]*)?/gi,
+                regex = new RegExp(expression);
 
-    function updateStreamData(streamData) {
-        myStreamData.state = streamData.val().state;
-        myStreamData.position = streamData.val().position;
-        console.log(1, myStream.key(), streamData.key(), streamData.val(), myStreamData);
-        // copy state from stream
-        setPlayerConfig(myStreamData);
-    }
-
-    function getBroadcastList() {
-        broadcastsList();
-    }
-
-    function setNewBroadcast() {
-        ///// ONLY FOR DEBUG!!!!!!! THIS CLEAR ALL DATA IN broadcast LIST !
-        //broadcastsListRef.remove();
-        //streamsListRef.remove();
-        //////////////////////////////////////
-        var expression = /[-a-zA-Z0-9@:%_\+.~#?&//=]{2,256}\.[a-z]{2,4}\b(\/[-a-zA-Z0-9@:%_\+.~#?&//=]*)?/gi;
-        var regex = new RegExp(expression);
-
-
-        if (inputPutUrl.value && regex.test(inputPutUrl.value)) {
-            var newBroadcastRef = broadcastsListRef.push(),
-                u = new URL(inputPutUrl.value),
-                newBroadcastData = {
-                    src: inputPutUrl.value,
-                    streamId: 0,
-                    techOrder: u.host
-                };
-
-            writeDataToDB(newBroadcastRef, newBroadcastData);
-            //getBroadcast();
-            inputGetUrl.value = inputPutUrl.value;
-            return;
+            // Validate inputed URL
+            if (regex.test(inputPutUrl.value)) {
+                //Create new Broadcast
+                var newBroadcastRef = broadcastsListRef.push(),
+                    u = new URL(inputPutUrl.value),
+                    newBroadcastData = {
+                        src: inputPutUrl.value,
+                        techOrder: u.host,
+                        state: 'pause'
+                    };
+                // Write created broadcast to DB
+                newBroadcastRef.set(newBroadcastData);
+                // Set inputed URL value for copy
+                inputGetUrl.value = inputPutUrl.value;
+                return;
+            }
+            // If URL is not validate
+            alert('Введите ссылку на видео...');
         }
-        alert('Введите УРЛ');
-    }
-
-    function setNewStreamRef() {
-        return streamsListRef.push();
-    }
-
-    function writeDataToDB(ref, data) {
-        ref.set(data);
-    }
-
-    function deleteDataFromDB(ref) {
-        ref.remove();
     }
 });
