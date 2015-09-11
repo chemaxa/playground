@@ -99,7 +99,6 @@ $(function() {
                     //Get URL & TechOrder video
                     ref.once("value", function(snapshot) {
                         // Create own default stream 
-
                         myStreamData = {
                             'state': 'pause',
                             'position': 0,
@@ -178,7 +177,9 @@ $(function() {
         this.setStateBroadcast = function(myStreamData) {
             var ref = new Firebase(broadcastsListRef.toString() + "/" + myStreamData.broadcastId);
             ref.set({
-                'state': myStreamData.state
+                'state': myStreamData.state,
+                'src': myStreamData.src,
+                'techOrder': myStreamData.techOrder
             });
         }
 
@@ -198,8 +199,8 @@ $(function() {
                     u = new URL(inputPutUrl.value),
                     newBroadcastData = {
                         src: inputPutUrl.value,
-                        streamId: 0,
-                        techOrder: u.host
+                        techOrder: u.host,
+                        state: 'pause'
                     };
                 // Write created broadcast to DB
                 newBroadcastRef.set(newBroadcastData);
