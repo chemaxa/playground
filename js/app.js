@@ -13,7 +13,8 @@ $(function() {
         // VideoJS player init config
         playerConfig = {
             "techOrder": ["youtube"],
-            "src": "www.youtube.com/watch?v=yvRn76Fqyzc"
+            "src": "www.youtube.com/watch?v=yvRn76Fqyzc",
+            "controls": true
         },
 
         //VideoJS Player Object
@@ -71,7 +72,7 @@ $(function() {
 
             if (myStreamRef != undefined) {
                 myStreamRef.set(myStreamData);
-                brdCntr.setStateBroadcast(myStreamData);
+                //brdCntr.setStateBroadcast(myStreamData);
             }
         }
 
@@ -81,40 +82,83 @@ $(function() {
     function StrCntr() {
 
         var self = this;
+        this.setNewStream = function(broadcastId) {
+            console.log('Child NOT exist');
+            var ref = new Firebase(broadcastsListRef.toString() + "/" + broadcastId),
+                createStream = new Promise(function(resolve, reject) {
+                    ref.once("value", function(snapshot) {
+                        resolve(snapshot);
+                    }, function(err) {
+                        reject(err)
+                    });
+                });
+            createStream.then(create, error);
+            //Get URL & TechOrder video
+            function create(data) {
+                // Create own default stream 
+                myStreamData = {
+                    'state': 'pause',
+                    'position': 0,
+                    'broadcastId': broadcastId,
+                    'lastAlive': Firebase.ServerValue.TIMESTAMP,
+                    'src': data.val()['src'],
+                    'techOrder': data.val()['techOrder']
+                }
+                console.log('Start state: ', myStreamData);
+                // Create ref on my stream
+                myStreamRef = broadcastsListRef.child(broadcastId).push();
+                console.log(myStreamRef.toString())
+                    // Save my state
+                myStreamRef.set(myStreamData);
+                // Remove stream ondisconnect
+                myStreamRef.onDisconnect().remove();
+                //Start player
+                plrCntr.set(myStreamData);
+            }
+
+
+            function error(err) {
+                console.error(err);
+            }
+
+        }
 
         this.getDonorStream = function(broadcastId) {
-            var ref = new Firebase(broadcastsListRef.toString() + "/" + broadcastId);
-            ref.once("child_added", function(snapshot) {
-                if (snapshot.hasChildren()) {
+            var ref = new Firebase(broadcastsListRef.toString() + "/" + broadcastId),
+                hasChild = new Promise(function(resolve, reject) {
+                    ref.once("child_added", function(snapshot) {
+                        console.log('Snapshot: ', snapshot.val());
+                        resolve(snapshot.hasChildren());
+                    }, function(err) {
+                        reject(err);
+                    })
+                });
+
+            hasChild.then(childExist, error);
+
+            function childExist(data) {
+                // If child exist
+                if (data) {
+                    console.log('Child exist');
                     ref.orderByChild('lastAlive').limitToLast(1).once("child_added", function(snapshot) {
 
                         myStreamData = snapshot.val();
                         console.log('Copy state: ', myStreamData);
                         // Copy state from last alive stream
+                        if (!myStreamRef)
+                            myStreamRef = broadcastsListRef.child(broadcastId).push();
                         myStreamRef.set(myStreamData);
                         // Setting player
                         plrCntr.set(myStreamData);
                     });
                 } else {
-                    //Get URL & TechOrder video
-                    ref.once("value", function(snapshot) {
-                        // Create own default stream 
-                        myStreamData = {
-                            'state': 'pause',
-                            'position': 0,
-                            'broadcastId': broadcastId,
-                            'lastAlive': Firebase.ServerValue.TIMESTAMP,
-                            'src': snapshot.val()['src'],
-                            'techOrder': snapshot.val()['techOrder']
-                        }
-                        console.log('Start state: ', myStreamData);
-                        myStreamRef.set(myStreamData);
-                        //Start player
-                        plrCntr.set(myStreamData);
-                    });
+                    self.setNewStream(broadcastId);
                 }
-            })
+            }
 
+            function error(data) {
+                console.error(data);
+            }
         }
     }
 
@@ -153,20 +197,13 @@ $(function() {
         this.setCurrent = function(broadcastId) {
             // New Stream
             if (!myStreamRef) {
-                // Create ref on my stream
-                myStreamRef = broadcastsListRef.child(broadcastId).push();
                 // Copy state from last alive stream on this broadcast
                 strCntr.getDonorStream(broadcastId);
-
-                // Remove stream ondisconnect
-                myStreamRef.onDisconnect().remove();
             }
             // Change Broadcast
-            if (myStreamData.broadcastId != broadcastId) {
+            if (myStreamRef && myStreamData.broadcastId != broadcastId) {
                 // Remove ref from previous broadcast
                 myStreamRef.remove();
-                // Sub for new broadcast
-                myStreamRef = broadcastsListRef.child(broadcastId).push();
                 // Copy state from last alive stream on this broadcast
                 strCntr.getDonorStream(broadcastId);
                 // Remove stream ondisconnect
