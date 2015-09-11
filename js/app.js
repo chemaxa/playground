@@ -71,6 +71,7 @@ $(function() {
 
             if (myStreamRef != undefined) {
                 myStreamRef.set(myStreamData);
+                brdCntr.setStateBroadcast(myStreamData);
             }
         }
 
@@ -83,12 +84,12 @@ $(function() {
 
         this.getDonorStream = function(broadcastId) {
             var ref = new Firebase(broadcastsListRef.toString() + "/" + broadcastId);
-
-
             ref.once("child_added", function(snapshot) {
                 if (snapshot.hasChildren()) {
                     ref.orderByChild('lastAlive').limitToLast(1).once("child_added", function(snapshot) {
+
                         myStreamData = snapshot.val();
+                        console.log('Copy state: ', myStreamData);
                         // Copy state from last alive stream
                         myStreamRef.set(myStreamData);
                         // Setting player
@@ -98,6 +99,7 @@ $(function() {
                     //Get URL & TechOrder video
                     ref.once("value", function(snapshot) {
                         // Create own default stream 
+
                         myStreamData = {
                             'state': 'pause',
                             'position': 0,
@@ -106,6 +108,7 @@ $(function() {
                             'src': snapshot.val()['src'],
                             'techOrder': snapshot.val()['techOrder']
                         }
+                        console.log('Start state: ', myStreamData);
                         myStreamRef.set(myStreamData);
                         //Start player
                         plrCntr.set(myStreamData);
@@ -170,6 +173,13 @@ $(function() {
                 // Remove stream ondisconnect
                 myStreamRef.onDisconnect().remove();
             }
+        }
+
+        this.setStateBroadcast = function(myStreamData) {
+            var ref = new Firebase(broadcastsListRef.toString() + "/" + myStreamData.broadcastId);
+            ref.set({
+                'state': myStreamData.state
+            });
         }
 
         this.set = function() {
