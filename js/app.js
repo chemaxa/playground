@@ -31,39 +31,50 @@ $(function() {
     // Add events
     setBroadcast.addEventListener('click', brdCntr.set, false);
     getBroadcasts.addEventListener('click', brdCntr.list, false);
-    setInterval(plrCntr.log, 1000);
+    setInterval(plrCntr.log, 2000);
     //setInterval(PlCntr.set, 1000);
 
 
-    player.on('play', playerHandler);
-    player.on('pause', playerHandler);
+    player.on('play', playerHandlerPlay);
+    player.on('pause', playerHandlerPause);
 
-    function playerHandler() {
+    function playerHandlerPlay() {
         plrCntr.log();
+        myStreamData.state = 'play';
+        console.log(myStreamData.state, player.paused());
+        brdCntr.setStateBroadcast(myStreamData);
+    }
+
+    function playerHandlerPause() {
+        plrCntr.log();
+        myStreamData.state = 'pause';
+        console.log(myStreamData.state, player.paused());
         brdCntr.setStateBroadcast(myStreamData);
     }
 
     // PLayer Constructor 
     function PlrCntr() {
-        this.checkState = function(broadcastId) {
-            var ref = new Firebase(broadcastsListRef.toString() + "/" + broadcastId);
-            ref.on("value", function(snapshot) {
-                console.log(snapshot.val());
-            });
+        this.init = function(conf) {
+            player.src(conf.src);
+            player.currentTime(Math.round(conf.position));
+            if (conf.state == 'pause')
+                player.pause();
+            else
+                player.play();
         }
 
         this.set = function(conf) {
-            player.src(conf.src);
 
             if (player.currentTime() != conf.position) {
-                //player.currentTime(Math.round(conf.position));
+                player.currentTime(Math.round(conf.position));
             }
             if (conf.state == 'pause')
                 player.pause();
             else
                 player.play();
 
-            console.log('PC ', conf);
+            console.log('Player state: ', conf);
+
 
         };
 
@@ -120,7 +131,7 @@ $(function() {
                 // Remove stream ondisconnect
                 myStreamRef.onDisconnect().remove();
                 //Start player
-                plrCntr.set(myStreamData);
+                plrCntr.init(myStreamData);
             }
 
 
@@ -156,7 +167,7 @@ $(function() {
                             myStreamRef = broadcastsListRef.child(broadcastId).push();
                         myStreamRef.set(myStreamData);
                         // Setting player
-                        plrCntr.set(myStreamData);
+                        plrCntr.init(myStreamData);
                     });
                 } else {
                     self.setNewStream(broadcastId);
@@ -217,11 +228,17 @@ $(function() {
                 myStreamRef.onDisconnect().remove();
             }
 
-            (function(broadcastId) {
+            !(function(broadcastId) {
                 var ref = new Firebase(broadcastsListRef.toString() + "/" + broadcastId);
-                ref.once("value", function(snapshot) {
-                    console.log("Play state: ", snapshot.val()['state'], userAction);
-                    plrCntr.set(snapshot.val());
+
+                ref.on("value", function(snapshot) {
+                    console.log("Player Get State: ", snapshot.val()['state'], myStreamData.state);
+
+                    if (myStreamData.state != snapshot.val()['state']) {
+                        console.log("Player Set State: ", snapshot.val()['state'], myStreamData.state);
+                        plrCntr.set(snapshot.val());
+                        //myStreamData.state = snapshot.val();
+                    }
                 })
             })(broadcastId)
 
@@ -229,7 +246,7 @@ $(function() {
 
         this.setStateBroadcast = function(myStreamData) {
             var ref = new Firebase(broadcastsListRef.toString() + "/" + myStreamData.broadcastId);
-            console.log(ref.toString());
+            console.log('Set state: ', myStreamData.state);
             ref.update({
                 'state': myStreamData.state,
                 'src': myStreamData.src,
