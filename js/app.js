@@ -57,7 +57,7 @@ $(function() {
 
         this.set = function(conf) {
             player.src(conf.src);
-            if (player.currentTime() != conf.position) {
+            if (player.currentTime() < (conf.position + 2) || player.currentTime() > (conf.position - 2)) {
                 player.currentTime(Math.round(conf.position + 2));
             }
             if (conf.state == 'pause')
