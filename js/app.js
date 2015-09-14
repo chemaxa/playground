@@ -31,7 +31,7 @@ $(function() {
     // Add events
     setBroadcast.addEventListener('click', brdCntr.set, false);
     getBroadcasts.addEventListener('click', brdCntr.list, false);
-    setInterval(plrCntr.log, 2000);
+    setInterval(plrCntr.log, 1000);
     //setInterval(PlCntr.set, 1000);
 
 
@@ -54,20 +54,11 @@ $(function() {
 
     // PLayer Constructor 
     function PlrCntr() {
-        this.init = function(conf) {
-            player.src(conf.src);
-            player.currentTime(Math.round(conf.position));
-            if (conf.state == 'pause')
-                player.pause();
-            else
-                player.play();
-            console.log('Player init state: ', conf);
-        }
 
         this.set = function(conf) {
             player.src(conf.src);
             if (player.currentTime() != conf.position) {
-                player.currentTime(Math.round(conf.position));
+                player.currentTime(Math.round(conf.position + 2));
             }
             if (conf.state == 'pause')
                 player.pause();
@@ -135,7 +126,7 @@ $(function() {
                 // Remove stream ondisconnect
                 myStreamRef.onDisconnect().remove();
                 //Start player
-                plrCntr.init(myStreamData);
+                plrCntr.set(myStreamData);
                 // Set broadcast to default position
                 brdCntr.setStateBroadcast(myStreamData);
             }
@@ -183,7 +174,7 @@ $(function() {
                         // Set ours data in stream ref
                         myStreamRef.set(myStreamData);
                         // Setting player state
-                        plrCntr.init(myStreamData);
+                        plrCntr.set(myStreamData);
                     });
                 } else {
                     // If broadcat have not childrens, create new
