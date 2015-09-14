@@ -61,10 +61,11 @@ $(function() {
                 player.pause();
             else
                 player.play();
+            console.log('Player init state: ', conf);
         }
 
         this.set = function(conf) {
-
+            player.src(conf.src);
             if (player.currentTime() != conf.position) {
                 player.currentTime(Math.round(conf.position));
             }
@@ -72,10 +73,7 @@ $(function() {
                 player.pause();
             else
                 player.play();
-
-            console.log('Player state: ', conf);
-
-
+            console.log('Player set state: ', conf);
         };
 
         this.log = function() {
@@ -90,19 +88,22 @@ $(function() {
             myStreamData.lastAlive = Firebase.ServerValue.TIMESTAMP;
 
             if (myStreamRef) {
-                myStreamRef.set(myStreamData);
+                myStreamRef.update(myStreamData);
             }
+            console.log('Logging: ', myStreamData);
         }
 
     };
 
     //Stream Controller 
     function StrCntr() {
-
         var self = this;
+        // Setting new stream 
         this.setNewStream = function(broadcastId) {
             console.log('Child NOT exist');
+            // Ref to the broadcast
             var ref = new Firebase(broadcastsListRef.toString() + "/" + broadcastId),
+                // Create stream when value is changed? Because we have not video source & techorder and get it from DB!
                 createStream = new Promise(function(resolve, reject) {
                     ref.once("value", function(snapshot) {
                         resolve(snapshot);
@@ -123,6 +124,9 @@ $(function() {
                     'techOrder': data.val()['techOrder']
                 }
                 console.log('Start state: ', myStreamData);
+                // Remove ref from previous broadcast
+                if (myStreamRef)
+                    myStreamRef.remove();
                 // Create ref on my stream
                 myStreamRef = broadcastsListRef.child(broadcastId).push();
                 console.log(myStreamRef.toString())
@@ -132,6 +136,8 @@ $(function() {
                 myStreamRef.onDisconnect().remove();
                 //Start player
                 plrCntr.init(myStreamData);
+                // Set broadcast to default position
+                brdCntr.setStateBroadcast(myStreamData);
             }
 
 
@@ -139,11 +145,14 @@ $(function() {
                 console.error(err);
             }
 
-        }
-
+        };
+        // Copy translation state from alive stream
         this.getDonorStream = function(broadcastId) {
+            // Lnk to the broadcast
             var ref = new Firebase(broadcastsListRef.toString() + "/" + broadcastId),
+
                 hasChild = new Promise(function(resolve, reject) {
+                    // When child added to the broadcast fire this event
                     ref.once("child_added", function(snapshot) {
                         console.log('Snapshot: ', snapshot.val());
                         resolve(snapshot.hasChildren());
@@ -155,21 +164,29 @@ $(function() {
             hasChild.then(childExist, error);
 
             function childExist(data) {
-                // If child exist
-                if (data) {
-                    console.log('Child exist');
-                    ref.orderByChild('lastAlive').limitToLast(1).once("child_added", function(snapshot) {
 
+                if (data) {
+                    // If broadcast have childrens
+                    console.log('Child exist');
+                    // Order childs by lastAlive value
+                    ref.orderByChild('lastAlive').limitToLast(1).once("child_added", function(snapshot) {
+                        // Copy state from last alive child
                         myStreamData = snapshot.val();
                         console.log('Copy state: ', myStreamData);
-                        // Copy state from last alive stream
-                        if (!myStreamRef)
-                            myStreamRef = broadcastsListRef.child(broadcastId).push();
+                        // Remove ref from previous broadcast
+                        if (myStreamRef)
+                            myStreamRef.remove();
+                        // Set new stream ref to the current broadcast
+                        myStreamRef = broadcastsListRef.child(broadcastId).push();
+                        // Remove stream ondisconnect
+                        myStreamRef.onDisconnect().remove();
+                        // Set ours data in stream ref
                         myStreamRef.set(myStreamData);
-                        // Setting player
+                        // Setting player state
                         plrCntr.init(myStreamData);
                     });
                 } else {
+                    // If broadcat have not childrens, create new
                     self.setNewStream(broadcastId);
                 }
             }
@@ -177,7 +194,7 @@ $(function() {
             function error(data) {
                 console.error(data);
             }
-        }
+        };
     }
 
     // Broadcast Controller
@@ -220,22 +237,20 @@ $(function() {
             }
             // Change Broadcast
             if (myStreamRef && myStreamData.broadcastId != broadcastId) {
-                // Remove ref from previous broadcast
-                myStreamRef.remove();
+
                 // Copy state from last alive stream on this broadcast
                 strCntr.getDonorStream(broadcastId);
-                // Remove stream ondisconnect
-                myStreamRef.onDisconnect().remove();
+
             }
 
             !(function(broadcastId) {
                 var ref = new Firebase(broadcastsListRef.toString() + "/" + broadcastId);
 
                 ref.on("value", function(snapshot) {
-                    console.log("Player Get State: ", snapshot.val()['state'], myStreamData.state);
+                    console.log("Change Value Getting State: ", snapshot.val()['state'], myStreamData.state);
 
                     if (myStreamData.state != snapshot.val()['state']) {
-                        console.log("Player Set State: ", snapshot.val()['state'], myStreamData.state);
+                        console.log("Change Value Setting State: ", snapshot.val()['state'], myStreamData.state);
                         plrCntr.set(snapshot.val());
                         //myStreamData.state = snapshot.val();
                     }
@@ -250,6 +265,7 @@ $(function() {
             ref.update({
                 'state': myStreamData.state,
                 'src': myStreamData.src,
+                'position': myStreamData.position,
                 'techOrder': myStreamData.techOrder
             });
         }
@@ -271,7 +287,8 @@ $(function() {
                     newBroadcastData = {
                         src: inputPutUrl.value,
                         techOrder: u.host,
-                        state: 'pause'
+                        state: 'pause',
+                        position: 0
                     };
                 // Write created broadcast to DB
                 newBroadcastRef.set(newBroadcastData);
