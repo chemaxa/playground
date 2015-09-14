@@ -15,8 +15,7 @@ $(function() {
             "techOrder": ["youtube"],
             "src": "www.youtube.com/watch?v=yvRn76Fqyzc"
         },
-        // Set user active
-        userAction = false,
+
         //VideoJS Player Object
         player = videojs('player', playerConfig),
 
@@ -36,14 +35,13 @@ $(function() {
     //setInterval(PlCntr.set, 1000);
 
 
-    player.on('play', function() {
-        userAction = true;
+    player.on('play', playerHandler);
+    player.on('pause', playerHandler);
+
+    function playerHandler() {
         plrCntr.log();
-    });
-    player.on('pause', function() {
-        userAction = true;
-        plrCntr.log();
-    });
+        brdCntr.setStateBroadcast(myStreamData);
+    }
 
     // PLayer Constructor 
     function PlrCntr() {
@@ -82,12 +80,7 @@ $(function() {
 
             if (myStreamRef) {
                 myStreamRef.set(myStreamData);
-                brdCntr.setStateBroadcast(myStreamData);
             }
-            /*if (userAction) {
-                brdCntr.setStateBroadcast(myStreamData);
-                userAction = false;
-            }*/
         }
 
     };
@@ -223,6 +216,7 @@ $(function() {
                 // Remove stream ondisconnect
                 myStreamRef.onDisconnect().remove();
             }
+
             (function(broadcastId) {
                 var ref = new Firebase(broadcastsListRef.toString() + "/" + broadcastId);
                 ref.once("value", function(snapshot) {
