@@ -13,7 +13,12 @@ $(function() {
         // VideoJS player init config
         playerConfig = {
             "techOrder": ["youtube"],
-            "src": "www.youtube.com/watch?v=yvRn76Fqyzc"
+            "src": "www.youtube.com/watch?v=yvRn76Fqyzc",
+            "controls": true,
+            "autoplay": false,
+            "preload": "auto",
+            "width": 480,
+            "height": 320
         },
 
         //VideoJS Player Object
@@ -57,9 +62,9 @@ $(function() {
 
         this.set = function(conf) {
             player.src(conf.src);
-            if (player.currentTime() < (conf.position + 2) || player.currentTime() > (conf.position - 2)) {
-                player.currentTime(Math.round(conf.position + 2));
-            }
+            //if (player.currentTime() != conf.position) {
+            player.currentTime(Math.round(conf.position));
+            //}
             if (conf.state == 'pause')
                 player.pause();
             else
@@ -171,6 +176,8 @@ $(function() {
                         myStreamRef = broadcastsListRef.child(broadcastId).push();
                         // Remove stream ondisconnect
                         myStreamRef.onDisconnect().remove();
+                        // +2 sec for buffering
+                        myStreamData.position = myStreamData.position + 2;
                         // Set ours data in stream ref
                         myStreamRef.set(myStreamData);
                         // Setting player state
