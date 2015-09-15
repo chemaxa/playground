@@ -32,9 +32,17 @@ $(function() {
         // Stream Controller
         strCntr = new StrCntr(),
         // Router
-        router = new Router();
+        router = new Router(),
+        // Object with url params
+        urlObj = router.parseUrl(window.location);
+
+    // Init broadcast if URL GET params exist
+    if (urlObj.bcstId) {
+        console.log(urlObj);
+        brdCntr.setCurrent(urlObj.bcstId);
+    }
     // Clean empty broadcasts
-    //brdCntr.cleaner(initObj.bcstId);
+    brdCntr.cleaner();
     // Add events
     setBroadcast.addEventListener('click', router.set, false);
     getBroadcasts.addEventListener('click', brdCntr.list, false);
@@ -60,15 +68,7 @@ $(function() {
         brdCntr.setStateBroadcast(myStreamData);
     }
 
-    // Init broadcast if GET params exist
-    ! function() {
-        var initObj = router.parseUrl(location);
-        if (!initObj.bcstId)
-            return;
-        console.log(initObj);
-        brdCntr.setCurrent(initObj.bcstId);
 
-    }();
 
     //Router :)
     function Router() {
@@ -337,13 +337,19 @@ $(function() {
             });
         }
 
-        this.cleaner = function(broadcastId) {
+        this.cleaner = function() {
             console.log('Cleaner');
-            var ref = new Firebase(broadcastsListRef.toString() + "/" + broadcastId);
-            ref.once("value", function(snapshot) {
-                console.log(snapshot.toString());
-                if (snapshot.hasChildren()) return;
-                ref.remove();
+            broadcastsListRef.once("value", function(snapshot) {
+                console.log(snapshot.hasChildren(), snapshot.key());
+                snapshot.forEach(function(childSnapshot) {
+                    console.log(childSnapshot.hasChildren(), childSnapshot.key(), childSnapshot.numChildren());
+                    // Num of params in Broadcast, if it <4 that empty broadcast
+                    if (childSnapshot.numChildren() <= 4) {
+                        var ref = new Firebase(broadcastsListRef.toString() + "/" + childSnapshot.key());
+                        ref.remove();
+                    }
+
+                });
             });
         }
     }
