@@ -30,12 +30,15 @@ $(function() {
         // Player Controller
         plrCntr = new PlrCntr(),
         // Stream Controller
-        strCntr = new StrCntr();
-
-
+        strCntr = new StrCntr(),
+        // Router
+        router = new Router();
+    // Clean empty broadcasts
+    //brdCntr.cleaner(initObj.bcstId);
     // Add events
-    setBroadcast.addEventListener('click', brdCntr.set, false);
+    setBroadcast.addEventListener('click', router.set, false);
     getBroadcasts.addEventListener('click', brdCntr.list, false);
+    // DEBUG!!!
     setInterval(plrCntr.log, 1000);
     //setInterval(PlCntr.set, 1000);
 
@@ -57,9 +60,75 @@ $(function() {
         brdCntr.setStateBroadcast(myStreamData);
     }
 
-    // PLayer Constructor 
-    function PlrCntr() {
+    // Init broadcast if GET params exist
+    ! function() {
+        var initObj = router.parseUrl(location);
+        if (!initObj.bcstId)
+            return;
+        console.log(initObj);
+        brdCntr.setCurrent(initObj.bcstId);
 
+    }();
+
+    //Router :)
+    function Router() {
+        var self = this;
+        this.set = function() {
+            ///// ONLY FOR DEBUG!!!!!!! THIS CLEAR ALL DATA IN DB broadcast LIST !
+            //broadcastsListRef.remove();
+            //////////////////////////////////////
+
+            // Checking input URL
+            var expression = /[-a-zA-Z0-9@:%_\+.~#?&//=]{2,256}\.[a-z]{2,4}\b(\/[-a-zA-Z0-9@:%_\+.~#?&//=]*)?/gi,
+                regex = new RegExp(expression);
+
+            // Validate inputed URL
+            if (regex.test(inputPutUrl.value)) {
+                //Create new Broadcast
+                var newBroadcastRef = broadcastsListRef.push(),
+                    u = new URL(inputPutUrl.value),
+                    newBroadcastData = {
+                        src: inputPutUrl.value,
+                        techOrder: u.host,
+                        state: 'pause',
+                        position: 0
+                    };
+                // Write created broadcast to DB
+                newBroadcastRef.set(newBroadcastData);
+                // Set URL to broadcast
+                var broadcastUrl = location.host + '/?bcstId=' + newBroadcastRef.key();
+                inputGetUrl.value = broadcastUrl;
+                brdCntr.setCurrent(newBroadcastRef.key());
+                return;
+            }
+            // If URL is not validate
+            alert('Введите ссылку на видео...');
+        }
+
+        this.parseUrl = function(location) {
+            if (location == 'undefined') return;
+
+            function getSearchParameters() {
+                var prmstr = location.search.substr(1);
+                return prmstr != null && prmstr != "" ? transformToObj(prmstr) : {};
+            }
+
+            function transformToObj(prmstr) {
+                var params = {};
+                var prmarr = prmstr.split("&");
+                for (var i = 0; i < prmarr.length; i++) {
+                    var tmparr = prmarr[i].split("=");
+                    params[tmparr[0]] = tmparr[1];
+                }
+                return params;
+            }
+
+            return getSearchParameters();
+        }
+    }
+    // PLayer Controller 
+    function PlrCntr() {
+        var self = this;
         this.set = function(conf) {
             player.src(conf.src);
             //if (player.currentTime() != conf.position) {
@@ -268,34 +337,14 @@ $(function() {
             });
         }
 
-        this.set = function() {
-            ///// ONLY FOR DEBUG!!!!!!! THIS CLEAR ALL DATA IN DB broadcast LIST !
-            //broadcastsListRef.remove();
-            //////////////////////////////////////
-
-            // Checking input URL
-            var expression = /[-a-zA-Z0-9@:%_\+.~#?&//=]{2,256}\.[a-z]{2,4}\b(\/[-a-zA-Z0-9@:%_\+.~#?&//=]*)?/gi,
-                regex = new RegExp(expression);
-
-            // Validate inputed URL
-            if (regex.test(inputPutUrl.value)) {
-                //Create new Broadcast
-                var newBroadcastRef = broadcastsListRef.push(),
-                    u = new URL(inputPutUrl.value),
-                    newBroadcastData = {
-                        src: inputPutUrl.value,
-                        techOrder: u.host,
-                        state: 'pause',
-                        position: 0
-                    };
-                // Write created broadcast to DB
-                newBroadcastRef.set(newBroadcastData);
-                // Set inputed URL value for copy
-                inputGetUrl.value = inputPutUrl.value;
-                return;
-            }
-            // If URL is not validate
-            alert('Введите ссылку на видео...');
+        this.cleaner = function(broadcastId) {
+            console.log('Cleaner');
+            var ref = new Firebase(broadcastsListRef.toString() + "/" + broadcastId);
+            ref.once("value", function(snapshot) {
+                console.log(snapshot.toString());
+                if (snapshot.hasChildren()) return;
+                ref.remove();
+            });
         }
     }
 });
