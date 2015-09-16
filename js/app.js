@@ -39,6 +39,7 @@ $(function() {
     // Init broadcast if URL GET params exist
     if (urlObj.bcstId) {
         brdCntr.setCurrent(urlObj.bcstId);
+        chat(urlObj.bcstId);
     }
     // Clean empty broadcasts
     brdCntr.cleaner();
@@ -69,9 +70,10 @@ $(function() {
     }
 
 
-    function Chat(broadcastId) {
-
+    function chat(broadcastId) {
+        if (!broadcastId) return;
         var ref = new Firebase(broadcastsListRef.toString() + "/" + broadcastId + '/messages');
+        console.log(ref.toString());
         $('#messageInput').keypress(function(e) {
             if (e.keyCode == 13) {
                 var name = $('#nameInput').val();
@@ -120,6 +122,7 @@ $(function() {
                 var broadcastUrl = location.host + '/?bcstId=' + newBroadcastRef.key();
                 inputGetUrl.value = broadcastUrl;
                 brdCntr.setCurrent(newBroadcastRef.key());
+                chat(newBroadcastRef.key());
                 return;
             }
             // If URL is not validate
