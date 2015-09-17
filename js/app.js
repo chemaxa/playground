@@ -341,7 +341,7 @@ $(function() {
             broadcastsListRef.once("value", function(snapshot) {
                 snapshot.forEach(function(childSnapshot) {
                     // Num of params in Broadcast, if it <4 that empty broadcast
-                    if (childSnapshot.numChildren() <= 4) {
+                    if (childSnapshot.numChildren() <= 5) {
                         var ref = new Firebase(broadcastsListRef.toString() + "/" + childSnapshot.key());
                         ref.remove();
                     }
