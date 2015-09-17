@@ -69,7 +69,7 @@ $(function() {
         brdCntr.setStateBroadcast(myStreamData);
     }
 
-
+    // Simple Anon Chat
     function chat(broadcastId) {
         if (!broadcastId) return;
         var ref = new Firebase(broadcastsListRef.toString() + "/" + broadcastId + '/messages');
