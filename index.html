@@ -49,20 +49,33 @@
                 <div class="form-group">
                     <label for="inputGetUrl" class="col-sm-2 control-label">Get URL</label>
                     <div class="input-group col-sm-10">
-                        <input type="url" class="form-control" id="inputGetUrl" placeholder="Get URL" value='http://www.youtube.com/watch?v=yvRn76Fqyzc'>
+                        <input type="url" class="form-control" id="inputGetUrl" placeholder="Get URL" data-value='http://www.youtube.com/watch?v=yvRn76Fqyzc'>
                     </div>
                 </div>
                 <div class="col-md-8">
-                    <video id="player" class="video-js vjs-default-skin" controls="true" preload="auto" width="480" height="270" data-setup='{}'>
+                    <video id="player" class="video-js vjs-default-skin">
                         <p class="vjs-no-js">
                             To view this video please enable JavaScript, and consider upgrading to a web browser that
                             <a href="http://videojs.com/html5-video-support/" target="_blank">supports HTML5 video</a>
                         </p>
                     </video>
                 </div>
-                <div class="col-md-4">
+                <!-- <div class="col-md-4">
                     <button id='getBroadcasts' class="btn btn-primary">Get Broadcasts</button>
                     <div id="broadcasts" class="list-group"></div>
+                </div> -->
+                <div class="col-md-4">
+                    <div id='messagesDiv'></div>
+                    <div class="form-horizontal">
+                        <div class="form-group">
+                            <label for="nameInput">Name</label>
+                            <input type="text" class="form-control" id="nameInput" placeholder="Name">
+                        </div>
+                        <div class="form-group">
+                            <label for="messageInput">Message</label>
+                            <textarea class="form-control" id="messageInput" rows="3" placeholder="Message"></textarea>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>

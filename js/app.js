@@ -13,7 +13,12 @@ $(function() {
         // VideoJS player init config
         playerConfig = {
             "techOrder": ["youtube"],
-            "src": "www.youtube.com/watch?v=yvRn76Fqyzc"
+            "src": "www.youtube.com/watch?v=yvRn76Fqyzc",
+            "controls": true,
+            "autoplay": false,
+            "preload": "auto",
+            "width": 480,
+            "height": 320
         },
 
         //VideoJS Player Object
@@ -25,14 +30,26 @@ $(function() {
         // Player Controller
         plrCntr = new PlrCntr(),
         // Stream Controller
-        strCntr = new StrCntr();
+        strCntr = new StrCntr(),
+        // Router
+        router = new Router(),
+        // Object with url params
+        urlObj = router.parseUrl(window.location);
 
-
-    // Add events
-    setBroadcast.addEventListener('click', brdCntr.set, false);
-    getBroadcasts.addEventListener('click', brdCntr.list, false);
+    // Init broadcast if URL GET params exist
+    if (urlObj.bcstId) {
+        brdCntr.setCurrent(urlObj.bcstId);
+        chat(urlObj.bcstId);
+    }
+    // Clean empty broadcasts
+    brdCntr.cleaner();
+    // Add events handlers
+    setBroadcast.addEventListener('click', router.set, false);
+    // DEBUG! BUTTON FOR GET BROADCASTS LIST
+    //getBroadcasts.addEventListener('click', brdCntr.list, false);
+    // Lets GO, statrting logging our state 
     setInterval(plrCntr.log, 1000);
-    //setInterval(PlCntr.set, 1000);
+
 
 
     player.on('play', playerHandlerPlay);
@@ -52,23 +69,100 @@ $(function() {
         brdCntr.setStateBroadcast(myStreamData);
     }
 
-    // PLayer Constructor 
-    function PlrCntr() {
+    // Simple Anon Chat
+    function chat(broadcastId) {
+        if (!broadcastId) return;
+        var ref = new Firebase(broadcastsListRef.toString() + "/" + broadcastId + '/messages');
+        console.log(ref.toString());
+        $('#messageInput').keypress(function(e) {
+            if (e.keyCode == 13) {
+                var name = $('#nameInput').val();
+                var text = $('#messageInput').val();
+                ref.push({
+                    name: name,
+                    text: text
+                });
+                $('#messageInput').val('');
+            }
+        });
+        ref.on('child_added', function(snapshot) {
+            var message = snapshot.val();
+            displayChatMessage(message.name, message.text);
+        });
 
+        function displayChatMessage(name, text) {
+            $('<div/>').text(text).prepend($('<em/>').text(name + ': ')).appendTo($('#messagesDiv'));
+            $('#messagesDiv')[0].scrollTop = $('#messagesDiv')[0].scrollHeight;
+        };
+    }
+
+
+    //Router :)
+    function Router() {
+        var self = this;
+        this.set = function() {
+            // Checking input URL
+            var expression = /[-a-zA-Z0-9@:%_\+.~#?&//=]{2,256}\.[a-z]{2,4}\b(\/[-a-zA-Z0-9@:%_\+.~#?&//=]*)?/gi,
+                regex = new RegExp(expression);
+
+            // Validate inputed URL
+            if (regex.test(inputPutUrl.value)) {
+                //Create new Broadcast
+                var newBroadcastRef = broadcastsListRef.push(),
+                    u = new URL(inputPutUrl.value),
+                    newBroadcastData = {
+                        src: inputPutUrl.value,
+                        techOrder: u.host,
+                        state: 'pause',
+                        position: 0
+                    };
+                // Write created broadcast to DB
+                newBroadcastRef.set(newBroadcastData);
+                // Set URL to broadcast
+                var broadcastUrl = location.host + '/?bcstId=' + newBroadcastRef.key();
+                inputGetUrl.value = broadcastUrl;
+                brdCntr.setCurrent(newBroadcastRef.key());
+                chat(newBroadcastRef.key());
+                return;
+            }
+            // If URL is not validate
+            alert('Введите ссылку на видео...');
+        }
+
+        this.parseUrl = function(location) {
+
+            function getSearchParameters() {
+                var prmstr = location.search.substr(1);
+                return prmstr != null && prmstr != "" ? transformToObj(prmstr) : {};
+            }
+
+            function transformToObj(prmstr) {
+                var params = {};
+                var prmarr = prmstr.split("&");
+                for (var i = 0; i < prmarr.length; i++) {
+                    var tmparr = prmarr[i].split("=");
+                    params[tmparr[0]] = tmparr[1];
+                }
+                return params;
+            }
+
+            return getSearchParameters();
+        }
+    }
+
+    // PLayer Controller 
+    function PlrCntr() {
+        var self = this;
         this.set = function(conf) {
             player.src(conf.src);
-            if (player.currentTime() != conf.position) {
-                player.currentTime(Math.round(conf.position + 2));
-            }
+            player.currentTime(Math.round(conf.position));
             if (conf.state == 'pause')
                 player.pause();
             else
                 player.play();
-            console.log('Player set state: ', conf);
         };
 
         this.log = function() {
-
             if (player.paused()) {
                 myStreamData.state = 'pause';
             } else {
@@ -81,9 +175,7 @@ $(function() {
             if (myStreamRef) {
                 myStreamRef.update(myStreamData);
             }
-            console.log('Logging: ', myStreamData);
         }
-
     };
 
     //Stream Controller 
@@ -91,7 +183,6 @@ $(function() {
         var self = this;
         // Setting new stream 
         this.setNewStream = function(broadcastId) {
-            console.log('Child NOT exist');
             // Ref to the broadcast
             var ref = new Firebase(broadcastsListRef.toString() + "/" + broadcastId),
                 // Create stream when value is changed? Because we have not video source & techorder and get it from DB!
@@ -103,19 +194,19 @@ $(function() {
                     });
                 });
             createStream.then(create, error);
+
             //Get URL & TechOrder video
             function create(data) {
                 // Create own default stream 
                 myStreamData = {
-                    'state': 'pause',
-                    'position': 0,
-                    'broadcastId': broadcastId,
-                    'lastAlive': Firebase.ServerValue.TIMESTAMP,
-                    'src': data.val()['src'],
-                    'techOrder': data.val()['techOrder']
-                }
-                console.log('Start state: ', myStreamData);
-                // Remove ref from previous broadcast
+                        'state': 'pause',
+                        'position': 0,
+                        'broadcastId': broadcastId,
+                        'lastAlive': Firebase.ServerValue.TIMESTAMP,
+                        'src': data.val()['src'],
+                        'techOrder': data.val()['techOrder']
+                    }
+                    // Remove ref from previous broadcast
                 if (myStreamRef)
                     myStreamRef.remove();
                 // Create ref on my stream
@@ -131,21 +222,17 @@ $(function() {
                 brdCntr.setStateBroadcast(myStreamData);
             }
 
-
             function error(err) {
                 console.error(err);
             }
-
         };
         // Copy translation state from alive stream
         this.getDonorStream = function(broadcastId) {
             // Lnk to the broadcast
             var ref = new Firebase(broadcastsListRef.toString() + "/" + broadcastId),
-
                 hasChild = new Promise(function(resolve, reject) {
                     // When child added to the broadcast fire this event
                     ref.once("child_added", function(snapshot) {
-                        console.log('Snapshot: ', snapshot.val());
                         resolve(snapshot.hasChildren());
                     }, function(err) {
                         reject(err);
@@ -155,15 +242,12 @@ $(function() {
             hasChild.then(childExist, error);
 
             function childExist(data) {
-
                 if (data) {
                     // If broadcast have childrens
-                    console.log('Child exist');
                     // Order childs by lastAlive value
                     ref.orderByChild('lastAlive').limitToLast(1).once("child_added", function(snapshot) {
                         // Copy state from last alive child
                         myStreamData = snapshot.val();
-                        console.log('Copy state: ', myStreamData);
                         // Remove ref from previous broadcast
                         if (myStreamRef)
                             myStreamRef.remove();
@@ -171,6 +255,8 @@ $(function() {
                         myStreamRef = broadcastsListRef.child(broadcastId).push();
                         // Remove stream ondisconnect
                         myStreamRef.onDisconnect().remove();
+                        // +2 sec for buffering
+                        myStreamData.position = myStreamData.position + 2;
                         // Set ours data in stream ref
                         myStreamRef.set(myStreamData);
                         // Setting player state
@@ -191,10 +277,9 @@ $(function() {
     // Broadcast Controller
     function BrdCntr() {
         var self = this;
-        // Create/Update list of Broadcasts
+        // Get list of Broadcasts
         this.list = function() {
             broadcastsListRef.once('value', function(dataSnapshot) {
-
                 // Clear Broadcast List
                 if (broadcasts.children.length) {
                     broadcasts.innerHTML = '';
@@ -211,12 +296,10 @@ $(function() {
                     })(key);
 
                     a.href = 'javascript:void(0)';
-                    //a.innerHTML = dataSnapshot.val()[key].url;
                     a.innerHTML = key + '<br>' + dataSnapshot.val()[key].src;
 
                     broadcasts.appendChild(a);
                 }
-
             })
         }
 
@@ -228,22 +311,16 @@ $(function() {
             }
             // Change Broadcast
             if (myStreamRef && myStreamData.broadcastId != broadcastId) {
-
                 // Copy state from last alive stream on this broadcast
                 strCntr.getDonorStream(broadcastId);
 
             }
-
+            //Subscribe on change in broadcast
             !(function(broadcastId) {
                 var ref = new Firebase(broadcastsListRef.toString() + "/" + broadcastId);
-
                 ref.on("value", function(snapshot) {
-                    console.log("Change Value Getting State: ", snapshot.val()['state'], myStreamData.state);
-
                     if (myStreamData.state != snapshot.val()['state']) {
-                        console.log("Change Value Setting State: ", snapshot.val()['state'], myStreamData.state);
                         plrCntr.set(snapshot.val());
-                        //myStreamData.state = snapshot.val();
                     }
                 })
             })(broadcastId)
@@ -252,7 +329,6 @@ $(function() {
 
         this.setStateBroadcast = function(myStreamData) {
             var ref = new Firebase(broadcastsListRef.toString() + "/" + myStreamData.broadcastId);
-            console.log('Set state: ', myStreamData.state);
             ref.update({
                 'state': myStreamData.state,
                 'src': myStreamData.src,
@@ -261,34 +337,16 @@ $(function() {
             });
         }
 
-        this.set = function() {
-            ///// ONLY FOR DEBUG!!!!!!! THIS CLEAR ALL DATA IN DB broadcast LIST !
-            //broadcastsListRef.remove();
-            //////////////////////////////////////
-
-            // Checking input URL
-            var expression = /[-a-zA-Z0-9@:%_\+.~#?&//=]{2,256}\.[a-z]{2,4}\b(\/[-a-zA-Z0-9@:%_\+.~#?&//=]*)?/gi,
-                regex = new RegExp(expression);
-
-            // Validate inputed URL
-            if (regex.test(inputPutUrl.value)) {
-                //Create new Broadcast
-                var newBroadcastRef = broadcastsListRef.push(),
-                    u = new URL(inputPutUrl.value),
-                    newBroadcastData = {
-                        src: inputPutUrl.value,
-                        techOrder: u.host,
-                        state: 'pause',
-                        position: 0
-                    };
-                // Write created broadcast to DB
-                newBroadcastRef.set(newBroadcastData);
-                // Set inputed URL value for copy
-                inputGetUrl.value = inputPutUrl.value;
-                return;
-            }
-            // If URL is not validate
-            alert('Введите ссылку на видео...');
+        this.cleaner = function() {
+            broadcastsListRef.once("value", function(snapshot) {
+                snapshot.forEach(function(childSnapshot) {
+                    // Num of params in Broadcast, if it <4 that empty broadcast
+                    if (childSnapshot.numChildren() <= 5) {
+                        var ref = new Firebase(broadcastsListRef.toString() + "/" + childSnapshot.key());
+                        ref.remove();
+                    }
+                });
+            });
         }
     }
 });
