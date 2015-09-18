@@ -73,7 +73,7 @@ $(function() {
     function chat(broadcastId) {
         if (!broadcastId) return;
         var ref = new Firebase(broadcastsListRef.toString() + "/" + broadcastId + '/messages');
-        console.log(ref.toString());
+        $('#messagesDiv').html('');
         $('#messageInput').keypress(function(e) {
             if (e.keyCode == 13) {
                 var name = $('#nameInput').val();
