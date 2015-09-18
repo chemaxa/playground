@@ -119,7 +119,7 @@ $(function() {
                 // Write created broadcast to DB
                 newBroadcastRef.set(newBroadcastData);
                 // Set URL to broadcast
-                var broadcastUrl = location.host + '/?bcstId=' + newBroadcastRef.key();
+                var broadcastUrl = location.href + '/?bcstId=' + newBroadcastRef.key();
                 inputGetUrl.value = broadcastUrl;
                 brdCntr.setCurrent(newBroadcastRef.key());
                 chat(newBroadcastRef.key());
